@@ -124,11 +124,13 @@ export default function HomeHero({ heroProduct, pillars = [], content = {} }) {
                             {imageUrl ? (
                                 <AppImage
                                     src={imageUrl}
-                                    alt={heroProduct.image?.alt_text || heroProduct.name}
+                                    alt={heroProduct?.image?.alt_text || heroProduct?.name || appName}
                                     className="size-full object-cover"
                                     wrapperClassName="size-full"
                                     highPriority
                                     eager
+                                    width={800}
+                                    height={1000}
                                 />
                             ) : (
                                 <div className="flex size-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-brand-green to-brand-green-light p-8 text-center text-white">
@@ -172,6 +174,9 @@ export default function HomeHero({ heroProduct, pillars = [], content = {} }) {
                                             alt={item.alt}
                                             className="size-full object-cover transition duration-500 group-hover:scale-110"
                                             loading="lazy"
+                                            decoding="async"
+                                            width={200}
+                                            height={200}
                                         />
                                     </div>
                                     <p className="px-2 py-1.5 text-center text-[11px] font-semibold text-brand-ink">

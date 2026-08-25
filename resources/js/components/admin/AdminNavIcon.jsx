@@ -54,6 +54,13 @@ const icons = {
             <circle cx="8" cy="8" r="1.5" />
         </>
     ),
+    coupons: (
+        <>
+            <rect x="4" y="7" width="16" height="10" rx="2" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v10M16 7v10" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11 12h2" />
+        </>
+    ),
     gallery: (
         <>
             <rect x="4" y="5" width="16" height="14" rx="2" />
@@ -70,6 +77,12 @@ const icons = {
     homepage: (
         <>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z" />
+        </>
+    ),
+    about: (
+        <>
+            <circle cx="12" cy="12" r="8" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v5M12 7.5h.01" />
         </>
     ),
     reviews: (

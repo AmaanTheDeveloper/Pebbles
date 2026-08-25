@@ -9,6 +9,7 @@ import ContactInfoCards, {
     ContactSocialLinks,
 } from '../components/storefront/contact/ContactInfoCards';
 import ContactLocationSection, { ContactMapSection } from '../components/storefront/contact/ContactLocationSection';
+import SeoHead from '../components/seo/SeoHead';
 import { ScrollReveal } from '../hooks/useInView';
 
 export default function ContactPage() {
@@ -32,21 +33,43 @@ export default function ContactPage() {
 
     useEffect(() => {
         load();
-        document.title = 'Contact — Pebbles';
     }, []);
 
     if (loading) {
-        return <LoadingState label="Loading contact information…" />;
+        return (
+            <>
+                <SeoHead
+                    title="Contact"
+                    description="Get in touch with Pebbles — hours, phone, WhatsApp, and branch contact details."
+                    path="/contact"
+                />
+                <LoadingState label="Loading contact information…" />
+            </>
+        );
     }
 
     if (error) {
-        return <ErrorState message={error.message || 'Unable to load contact information.'} onRetry={load} />;
+        return (
+            <>
+                <SeoHead
+                    title="Contact"
+                    description="Get in touch with Pebbles — hours, phone, WhatsApp, and branch contact details."
+                    path="/contact"
+                />
+                <ErrorState message={error.message || 'Unable to load contact information.'} onRetry={load} />
+            </>
+        );
     }
 
     const showGeneralMap = !contact.primary_location && contact.map_embed_url;
 
     return (
         <>
+            <SeoHead
+                title="Contact"
+                description="Get in touch with Pebbles — hours, phone, WhatsApp, and branch contact details."
+                path="/contact"
+            />
             <ContactHero />
 
             <section className="hp-section mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">

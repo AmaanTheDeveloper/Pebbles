@@ -29,6 +29,8 @@ class ProductFactory extends Factory
             'is_available' => true,
             'is_featured' => false,
             'sort_order' => fake()->numberBetween(0, 20),
+            'stock_quantity' => null,
+            'low_stock_threshold' => 5,
         ];
     }
 
@@ -37,5 +39,18 @@ class ProductFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'is_available' => false,
         ]);
+    }
+
+    public function withStock(int $quantity, int $threshold = 5): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'stock_quantity' => $quantity,
+            'low_stock_threshold' => $threshold,
+        ]);
+    }
+
+    public function outOfStock(): static
+    {
+        return $this->withStock(0);
     }
 }

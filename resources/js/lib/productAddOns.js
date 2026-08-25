@@ -1,4 +1,4 @@
-const ICE_CREAM_CATEGORY_SLUGS = ['ice-cream-premium-flavours'];
+const ICE_CREAM_CATEGORY_SLUGS = ['ice-cream-premium-flavours', 'ice-cream-shakes'];
 const GOLA_GANDA_CATEGORY_SLUGS = ['gola-ganda'];
 
 export function categoryAllowsAddOns(categorySlug) {
@@ -21,7 +21,7 @@ export function addOnSectionHeading(categorySlug) {
         return 'Customize Your Gola Ganda';
     }
 
-    return null;
+    return 'Add-ons';
 }
 
 export function addOnSectionDescription(categorySlug) {
@@ -33,5 +33,5 @@ export function addOnSectionDescription(categorySlug) {
         return 'Pick your favorite Gola Ganda toppings.';
     }
 
-    return null;
+    return 'Select optional add-ons for this item.';
 }

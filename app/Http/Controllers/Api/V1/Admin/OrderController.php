@@ -104,6 +104,14 @@ class OrderController extends Controller
             $validated['note'] ?? null,
         );
 
+        $updated->load([
+            'user',
+            'branch',
+            'items.addOns',
+            'payment.proofs',
+            'statusHistories.changedBy',
+        ]);
+
         return new AdminOrderResource($updated);
     }
 }

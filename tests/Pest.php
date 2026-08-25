@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\ProductOfferPricing;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
 
@@ -17,6 +18,14 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(LazilyRefreshDatabase::class)
     ->in('Feature');
+
+pest()->extend(TestCase::class)
+    ->use(LazilyRefreshDatabase::class)
+    ->in('Unit');
+
+pest()->beforeEach(function (): void {
+    ProductOfferPricing::flush();
+})->in('Feature');
 
 /*
 |--------------------------------------------------------------------------

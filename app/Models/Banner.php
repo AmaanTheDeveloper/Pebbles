@@ -6,6 +6,16 @@ use Database\Factories\BannerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Deprecated promotional slides table.
+ *
+ * Homepage CMS (`homepage_showcase_items`, CTA cards, sections) already covers
+ * storefront marketing carousels. Prefer Homepage CMS and `site_contents` (About)
+ * instead of building a parallel banners admin/API. The table remains for schema
+ * integrity and legacy seed data only.
+ *
+ * @deprecated Use Homepage CMS showcase/CTA content instead.
+ */
 class Banner extends Model
 {
     /** @use HasFactory<BannerFactory> */

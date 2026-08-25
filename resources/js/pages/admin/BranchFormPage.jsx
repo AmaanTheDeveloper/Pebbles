@@ -23,6 +23,8 @@ const emptyForm = {
     opens_at: '',
     closes_at: '',
     display_order: '0',
+    preparation_minutes: '20',
+    delivery_minutes: '30',
     is_active: true,
     opening_hours: defaultOpeningHours(),
 };
@@ -75,6 +77,8 @@ export default function BranchFormPage() {
                     opens_at: branch.opens_at ?? '',
                     closes_at: branch.closes_at ?? '',
                     display_order: String(branch.display_order ?? 0),
+                    preparation_minutes: String(branch.preparation_minutes ?? 20),
+                    delivery_minutes: String(branch.delivery_minutes ?? 30),
                     is_active: Boolean(branch.is_active),
                     opening_hours: normalizeOpeningHours(branch.opening_hours),
                 });
@@ -111,6 +115,8 @@ export default function BranchFormPage() {
         opens_at: form.opens_at || null,
         closes_at: form.closes_at || null,
         display_order: Number(form.display_order) || 0,
+        preparation_minutes: Number(form.preparation_minutes) || 20,
+        delivery_minutes: Number(form.delivery_minutes) || 30,
         opening_hours: form.opening_hours,
     });
 
@@ -207,6 +213,8 @@ export default function BranchFormPage() {
                         <AdminFormField label="Slug" name="slug" required value={form.slug} onChange={(event) => { setSlugTouched(true); updateField('slug', event.target.value); }} errors={fieldErrors} />
                         <AdminFormField label="Code" name="code" value={form.code} onChange={(event) => updateField('code', event.target.value)} errors={fieldErrors} />
                         <AdminFormField label="Display order" name="display_order" type="number" min="0" value={form.display_order} onChange={(event) => updateField('display_order', event.target.value)} errors={fieldErrors} />
+                        <AdminFormField label="Preparation minutes" name="preparation_minutes" type="number" min="1" max="240" value={form.preparation_minutes} onChange={(event) => updateField('preparation_minutes', event.target.value)} errors={fieldErrors} hint="Used for takeaway and dine-in ETA. Delivery ETA adds delivery minutes." />
+                        <AdminFormField label="Delivery minutes" name="delivery_minutes" type="number" min="1" max="240" value={form.delivery_minutes} onChange={(event) => updateField('delivery_minutes', event.target.value)} errors={fieldErrors} hint="Added to preparation minutes for delivery ETA." />
                         <AdminFormField label="Phone" name="phone" value={form.phone} onChange={(event) => updateField('phone', event.target.value)} errors={fieldErrors} />
                         <AdminFormField label="WhatsApp" name="whatsapp" value={form.whatsapp} onChange={(event) => updateField('whatsapp', event.target.value)} errors={fieldErrors} />
                         <div className="sm:col-span-2">

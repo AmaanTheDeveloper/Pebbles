@@ -7,6 +7,7 @@ use App\Events\OrderCancelledByCustomer;
 use App\Models\Order;
 use App\Models\User;
 use App\Support\CustomerOrderActions;
+use App\Support\ProductStock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -29,6 +30,15 @@ class CancelCustomerOrder
             }
 
             $note = trim((string) ($reason ?: 'Cancelled by customer.'));
+
+            $locked->loadMissing('items');
+
+            $quantitiesByProductId = $locked->items
+                ->groupBy('product_id')
+                ->map(fn ($items) => (int) $items->sum('quantity'))
+                ->all();
+
+            ProductStock::restore($quantitiesByProductId);
 
             $cancelled = $this->updateOrderStatus->handle(
                 $locked,

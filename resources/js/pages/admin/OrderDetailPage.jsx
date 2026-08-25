@@ -10,6 +10,7 @@ import {
 import FlashMessage from '../../components/admin/FlashMessage';
 import { AdminSelectField, AdminTextareaField } from '../../components/admin/AdminFormField';
 import StatusBadge from '../../components/admin/StatusBadge';
+import DownloadOrderReceiptButton from '../../components/orders/DownloadOrderReceiptButton';
 import ErrorState from '../../components/storefront/ErrorState';
 import LoadingState from '../../components/storefront/LoadingState';
 import { AdminPageHeader, AdminPanel, AdminPanelBody } from '../../layouts/AdminLayout';
@@ -176,9 +177,16 @@ export default function AdminOrderDetailPage() {
                 title={`Order ${order.order_number}`}
                 description={`Placed ${formatDate(order.created_at)} · ${humanizeStatus(order.fulfillment_type)}`}
                 actions={
-                    <Link to="/admin/orders" className="text-sm font-medium text-amber-900 hover:underline">
-                        Back to orders
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <DownloadOrderReceiptButton
+                            orderNumber={order.order_number}
+                            variant="admin"
+                            label="Download Receipt"
+                        />
+                        <Link to="/admin/orders" className="text-sm font-medium text-amber-900 hover:underline">
+                            Back to orders
+                        </Link>
+                    </div>
                 }
             />
 
@@ -226,6 +234,25 @@ export default function AdminOrderDetailPage() {
                                     <dt className="text-stone-600">Subtotal</dt>
                                     <dd>{formatMoney(order.subtotal)}</dd>
                                 </div>
+                                {Number(order.discount_amount ?? 0) - Number(order.coupon_discount_amount ?? 0) > 0 ? (
+                                    <div className="flex justify-between">
+                                        <dt className="text-stone-600">Discount</dt>
+                                        <dd>
+                                            -
+                                            {formatMoney(
+                                                Number(order.discount_amount) - Number(order.coupon_discount_amount ?? 0),
+                                            )}
+                                        </dd>
+                                    </div>
+                                ) : null}
+                                {Number(order.coupon_discount_amount ?? 0) > 0 ? (
+                                    <div className="flex justify-between">
+                                        <dt className="text-stone-600">
+                                            {order.coupon_code ? `Coupon (${order.coupon_code})` : 'Coupon'}
+                                        </dt>
+                                        <dd>-{formatMoney(order.coupon_discount_amount)}</dd>
+                                    </div>
+                                ) : null}
                                 <div className="flex justify-between">
                                     <dt className="text-stone-600">Delivery fee</dt>
                                     <dd>{formatMoney(order.delivery_fee)}</dd>

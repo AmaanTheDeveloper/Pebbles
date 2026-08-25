@@ -49,6 +49,8 @@ class BranchController extends Controller
 
     public function update(Request $request, Branch $branch): JsonResponse
     {
+        // Branch ETA fields (preparation_minutes / delivery_minutes) are editable here —
+        // managers cannot edit branches; only super_admin may update branch ETA.
         abort_unless($request->user()?->isSuperAdmin(), 403);
 
         if (is_string($request->input('opening_hours'))) {
@@ -76,6 +78,8 @@ class BranchController extends Controller
             'opening_hours.*.closes' => ['nullable', 'date_format:H:i'],
             'opening_hours.*.note' => ['nullable', 'string', 'max:160'],
             'display_order' => ['sometimes', 'integer', 'min:0', 'max:9999'],
+            'preparation_minutes' => ['sometimes', 'integer', 'min:1', 'max:240'],
+            'delivery_minutes' => ['sometimes', 'integer', 'min:1', 'max:240'],
             'is_active' => ['sometimes', 'boolean'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ]);
@@ -123,6 +127,8 @@ class BranchController extends Controller
             'opening_hours' => $branch->resolvedOpeningHours(),
             'opening_hours_schedule' => OpeningHours::formattedSchedule($branch->resolvedOpeningHours()),
             'display_order' => $branch->display_order,
+            'preparation_minutes' => $branch->preparation_minutes,
+            'delivery_minutes' => $branch->delivery_minutes,
             'is_active' => $branch->is_active,
             'delivery_zones' => $branch->relationLoaded('deliveryZones') ? $branch->deliveryZones : null,
         ];

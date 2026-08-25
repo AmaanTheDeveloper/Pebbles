@@ -25,6 +25,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public media (product images, gallery, branding)
+    |--------------------------------------------------------------------------
+    |
+    | MEDIA_DISK defaults to the public disk. Optional MEDIA_URL overrides the
+    | base URL (CDN), e.g. https://cdn.example.com/storage — paths are appended.
+    | Payment proofs always use payment_proof_disk (private), never this disk.
+    |
+    */
+
+    'media_disk' => env('MEDIA_DISK', 'public'),
+    'media_url' => env('MEDIA_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Customer-facing payment methods
     |--------------------------------------------------------------------------
     |

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { formatDate, formatMoney } from '../../lib/format';
 import { getCustomerStatusLabel, isActiveOrder } from '../../lib/orderTracking';
+import DownloadOrderReceiptButton from './DownloadOrderReceiptButton';
 import PaymentStatusBadge from './PaymentStatusBadge';
 import ReorderOrderButton from './ReorderOrderButton';
 
@@ -45,20 +46,26 @@ export default function OrderCard({ order, variant = 'auto' }) {
                         Track order →
                     </Link>
                 ) : (
-                    <>
-                        <Link
-                            to={`/order/${order.order_number}`}
-                            className="inline-flex text-sm font-medium text-stone-700 hover:text-stone-900"
-                        >
-                            View details
-                        </Link>
-                        <ReorderOrderButton
-                            orderNumber={order.order_number}
-                            variant="secondary"
-                            className="!px-3 !py-1.5"
-                        />
-                    </>
+                    <Link
+                        to={`/order/${order.order_number}`}
+                        className="inline-flex text-sm font-medium text-stone-700 hover:text-stone-900"
+                    >
+                        View details
+                    </Link>
                 )}
+                <DownloadOrderReceiptButton
+                    orderNumber={order.order_number}
+                    variant="secondary"
+                    className="inline-flex"
+                    label="Receipt"
+                />
+                {!active ? (
+                    <ReorderOrderButton
+                        orderNumber={order.order_number}
+                        variant="secondary"
+                        className="!px-3 !py-1.5"
+                    />
+                ) : null}
             </div>
         </div>
     );

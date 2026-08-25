@@ -1,4 +1,5 @@
 import ProfileForm from '../components/account/ProfileForm';
+import EmailVerificationStatus from '../components/account/EmailVerificationStatus';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function ProfilePage() {
@@ -14,6 +15,7 @@ export default function ProfilePage() {
                     Manage your personal details, security settings, and saved delivery information.
                 </p>
             </div>
+            <EmailVerificationStatus />
             <ProfileForm showAddress={isCustomer} showDeleteAccount={isCustomer} />
         </div>
     );

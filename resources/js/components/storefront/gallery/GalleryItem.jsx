@@ -33,6 +33,9 @@ export default function GalleryItem({ item, layoutClass = '', animationDelay = 0
                             layoutClass.includes('featured') ? 'min-h-56 md:min-h-[28rem]' : 'aspect-square md:aspect-auto md:min-h-48',
                         ].join(' ')}
                         loading="lazy"
+                        decoding="async"
+                        width={600}
+                        height={600}
                     />
                 ) : (
                     <div

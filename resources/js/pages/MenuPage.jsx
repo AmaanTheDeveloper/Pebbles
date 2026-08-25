@@ -7,6 +7,7 @@ import EmptyState from '../components/storefront/EmptyState';
 import ErrorState from '../components/storefront/ErrorState';
 import LoadingState from '../components/storefront/LoadingState';
 import ProductCard from '../components/storefront/ProductCard';
+import SeoHead from '../components/seo/SeoHead';
 import { useCatalogQuery } from '../hooks/useCatalog';
 
 export default function MenuPage() {
@@ -73,6 +74,14 @@ export default function MenuPage() {
 
     return (
         <div className="space-y-6">
+            <SeoHead
+                title={activeCategory ? `${activeCategory.name} Menu` : 'Menu'}
+                description={
+                    activeCategory?.description ||
+                    'Browse the Pebbles digital menu — ice cream, shakes, faluda, kulfi, and more. Order online for takeaway or delivery.'
+                }
+                path={categorySlug ? `/menu/${categorySlug}` : '/menu'}
+            />
             <div className="rounded-xl border border-brand-green/15 bg-gradient-to-r from-brand-cream/80 to-white p-4 sm:p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">

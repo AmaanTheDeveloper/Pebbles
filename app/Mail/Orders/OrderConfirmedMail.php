@@ -38,7 +38,7 @@ class OrderConfirmedMail extends Mailable implements ShouldBeUnique, ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Pebbles Order #'.$this->order->public_order_number.' Is Confirmed!',
+            subject: 'Pebbles Order Confirmed — #'.$this->order->public_order_number,
         );
     }
 

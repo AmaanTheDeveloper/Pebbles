@@ -15,6 +15,9 @@ export default function LocationCard({ location, active = false, onSelect }) {
                         alt={`${location.name} branch`}
                         className="location-card-image h-44 w-full object-cover"
                         loading="lazy"
+                        decoding="async"
+                        width={640}
+                        height={176}
                     />
                 </button>
             ) : null}

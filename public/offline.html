@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>You're offline · Pebbles</title>
+    <style>
+        :root {
+            --brand-green: #176b3a;
+            --brand-orange: #f97316;
+            --brand-cream: #fffdf8;
+            --brand-ink: #1f2937;
+            --brand-muted: #6b7280;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            font-family: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+            background:
+                radial-gradient(ellipse 80% 50% at 10% -10%, rgb(46 139 87 / 0.12), transparent 55%),
+                radial-gradient(ellipse 70% 45% at 95% 5%, rgb(249 115 22 / 0.1), transparent 50%),
+                var(--brand-cream);
+            color: var(--brand-ink);
+        }
+        .wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .card {
+            width: min(100%, 28rem);
+            text-align: center;
+            background: rgb(255 255 255 / 0.88);
+            border: 1px solid rgb(23 107 58 / 0.12);
+            border-radius: 1.5rem;
+            padding: 2rem 1.5rem 1.75rem;
+            box-shadow: 0 18px 40px rgb(23 107 58 / 0.08);
+            animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .brand {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--brand-green);
+            margin: 0 0 0.5rem;
+        }
+        .eyebrow {
+            margin: 0;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--brand-orange);
+        }
+        .illu {
+            width: 9rem;
+            height: auto;
+            margin: 1rem auto 0.5rem;
+            display: block;
+            animation: float 3.4s ease-in-out infinite;
+        }
+        h1 {
+            margin: 0.5rem 0 0;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: clamp(1.5rem, 4vw, 1.875rem);
+            line-height: 1.2;
+        }
+        p {
+            margin: 0.75rem 0 0;
+            color: var(--brand-muted);
+            font-size: 0.95rem;
+            line-height: 1.55;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1.5rem;
+            min-height: 2.75rem;
+            padding: 0.7rem 1.4rem;
+            border: 0;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 10px 22px rgb(249 115 22 / 0.28);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 26px rgb(249 115 22 / 0.34); }
+        .btn:active { transform: translateY(0); }
+        .hint {
+            margin-top: 0.85rem;
+            font-size: 0.85rem;
+            color: #b45309;
+            min-height: 1.25rem;
+        }
+        @keyframes fade-up {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .card, .illu { animation: none !important; }
+            .btn { transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <main class="wrap">
+        <div class="card">
+            <p class="brand">Pebbles</p>
+            <p class="eyebrow">Connection lost</p>
+            <svg class="illu" viewBox="0 0 200 220" aria-hidden="true">
+                <ellipse cx="100" cy="198" rx="42" ry="8" fill="rgb(23 107 58 / 0.12)"></ellipse>
+                <path d="M68 118 L100 198 L132 118 Z" fill="#fbbf24" stroke="#b45309" stroke-width="1.5" stroke-linejoin="round"></path>
+                <circle cx="100" cy="78" r="42" fill="#f97316"></circle>
+                <circle cx="78" cy="92" r="22" fill="#fb923c"></circle>
+                <circle cx="122" cy="92" r="22" fill="#ea580c"></circle>
+                <path d="M148 48c10 10 10 26 0 36" fill="none" stroke="#176b3a" stroke-width="3" stroke-linecap="round"></path>
+                <path d="M142 54 L170 82" stroke="#f97316" stroke-width="3" stroke-linecap="round"></path>
+            </svg>
+            <h1>Oops! You're offline</h1>
+            <p>It looks like your internet connection was interrupted. Please reconnect and try again.</p>
+            <button class="btn" type="button" id="retry">Try Again</button>
+            <p class="hint" id="hint" aria-live="polite"></p>
+        </div>
+    </main>
+    <script>
+        (function () {
+            var button = document.getElementById('retry');
+            var hint = document.getElementById('hint');
+
+            async function isOnline() {
+                if (navigator.onLine === false) {
+                    return false;
+                }
+                try {
+                    var response = await fetch('/up?_=' + Date.now(), {
+                        method: 'GET',
+                        cache: 'no-store',
+                        credentials: 'omit',
+                    });
+                    return response.ok;
+                } catch (error) {
+                    return false;
+                }
+            }
+
+            button.addEventListener('click', async function () {
+                button.disabled = true;
+                button.textContent = 'Checking…';
+                hint.textContent = '';
+                var online = await isOnline();
+                if (online) {
+                    window.location.href = '/';
+                    return;
+                }
+                button.disabled = false;
+                button.textContent = 'Try Again';
+                hint.textContent = 'Still offline. Check your connection and try again.';
+            });
+
+            window.addEventListener('online', function () {
+                hint.textContent = 'Connection restored. Reloading…';
+                window.setTimeout(function () {
+                    window.location.href = '/';
+                }, 400);
+            });
+        })();
+    </script>
+</body>
+</html>

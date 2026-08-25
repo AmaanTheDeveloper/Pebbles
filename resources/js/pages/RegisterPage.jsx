@@ -3,13 +3,16 @@ import { Link, Navigate, useNavigate, useOutletContext } from 'react-router-dom'
 import SiteLogo from '../components/storefront/SiteLogo';
 import ErrorState from '../components/storefront/ErrorState';
 import LoadingState from '../components/storefront/LoadingState';
+import SeoHead from '../components/seo/SeoHead';
 import { useAuth } from '../contexts/AuthContext';
+import { useEmailVerificationReminder } from '../contexts/EmailVerificationReminderContext';
 import { firstFieldError } from '../lib/errors';
 import { postLoginPath } from '../lib/roles';
 
 export default function RegisterPage() {
     const { logo } = useOutletContext() ?? {};
     const { register, loading, error, clearError, isAuthenticated, initializing, user } = useAuth();
+    const { showReminder } = useEmailVerificationReminder();
     const navigate = useNavigate();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -31,12 +34,13 @@ export default function RegisterPage() {
         setFormError(null);
 
         try {
-            await register({
+            const nextUser = await register({
                 name,
                 email,
                 password,
                 password_confirmation: passwordConfirmation,
             });
+            showReminder(nextUser, { reason: 'register' });
             navigate('/menu', { replace: true });
         } catch (err) {
             setFormError(err.message || 'Unable to create an account.');
@@ -47,6 +51,11 @@ export default function RegisterPage() {
 
     return (
         <div className="mx-auto max-w-md space-y-6">
+            <SeoHead
+                title="Create account"
+                description="Create a Pebbles account to save your cart and place takeaway or delivery orders."
+                path="/register"
+            />
             <div className="space-y-2 text-center">
                 <SiteLogo logo={logo} variant="auth" linkTo="/" />
                 <h1 className="text-2xl font-semibold text-stone-900">Create an account</h1>

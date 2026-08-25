@@ -209,3 +209,59 @@ test('only the largest parseable offer discount is applied', function () {
         ->assertJsonPath('data.applied_offer.title', 'Hundred Fixed')
         ->assertJsonPath('data.total', '900.00');
 });
+
+test('maximum discount amount caps an entire-store percentage offer', function () {
+    $user = User::factory()->create();
+    [$branch] = makeDiscountBranch();
+    $product = makeDiscountProduct('2000.00');
+
+    Offer::factory()->create([
+        'title' => 'Capped Twenty',
+        'offer_value' => '20% off',
+        'maximum_discount_amount' => '150.00',
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($user)->postJson('/api/v1/cart/items', [
+        'product_id' => $product->id,
+        'quantity' => 1,
+    ])->assertSuccessful();
+
+    $this->actingAs($user)
+        ->getJson('/api/v1/cart')
+        ->assertSuccessful()
+        ->assertJsonPath('data.offer_discount_amount', '150.00')
+        ->assertJsonPath('data.total', '1850.00');
+
+    $this->actingAs($user)
+        ->postJson('/api/v1/checkout', [
+            'branch_id' => $branch->id,
+            'type' => OrderType::Takeaway->value,
+        ])
+        ->assertSuccessful()
+        ->assertJsonPath('data.discount_amount', '150.00')
+        ->assertJsonPath('data.total', '1850.00');
+});
+
+test('maximum discount amount caps percentage offer discounts', function () {
+    $user = User::factory()->create();
+    makeDiscountBranch();
+    $product = makeDiscountProduct('1000.00');
+
+    Offer::factory()->create([
+        'offer_value' => '50% off',
+        'maximum_discount_amount' => '75.00',
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($user)->postJson('/api/v1/cart/items', [
+        'product_id' => $product->id,
+        'quantity' => 1,
+    ])->assertSuccessful();
+
+    $this->actingAs($user)
+        ->getJson('/api/v1/cart')
+        ->assertSuccessful()
+        ->assertJsonPath('data.discount_amount', '75.00')
+        ->assertJsonPath('data.total', '925.00');
+});

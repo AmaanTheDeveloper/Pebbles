@@ -89,13 +89,13 @@ test('gola ganda products expose only gola ganda topping groups', function () {
         ->assertJsonPath('data.add_on_groups.0.add_ons.0.name', 'Extra Jelly');
 });
 
-test('non-eligible products do not expose add-on groups even when attached in admin', function () {
+test('non-eligible products do not expose legacy add-ons without category assignment', function () {
     $category = Category::factory()->create([
-        'slug' => 'ice-cream-shakes',
+        'slug' => 'limca-flavors',
         'is_active' => true,
     ]);
     $product = Product::factory()->for($category)->create([
-        'slug' => 'chocolate-shake',
+        'slug' => 'classic-limca',
         'is_active' => true,
         'is_available' => true,
     ]);
@@ -110,9 +110,85 @@ test('non-eligible products do not expose add-on groups even when attached in ad
     ]);
     $product->addOnGroups()->attach($group->id);
 
-    $this->getJson('/api/v1/catalog/products/chocolate-shake')
+    $this->getJson('/api/v1/catalog/products/classic-limca')
         ->assertSuccessful()
         ->assertJsonCount(0, 'data.add_on_groups');
+});
+
+test('explicit category assignment exposes add-ons on any assigned product category', function () {
+    $limca = Category::factory()->create([
+        'slug' => 'limca-flavors',
+        'is_active' => true,
+    ]);
+    $coffee = Category::factory()->create([
+        'slug' => 'coffee',
+        'is_active' => true,
+    ]);
+    $limcaProduct = Product::factory()->for($limca)->create([
+        'slug' => 'classic-limca-assigned',
+        'is_active' => true,
+        'is_available' => true,
+    ]);
+    $coffeeProduct = Product::factory()->for($coffee)->create([
+        'slug' => 'cafe-latte',
+        'is_active' => true,
+        'is_available' => true,
+    ]);
+
+    $group = AddOnGroup::factory()->create([
+        'slug' => 'ice-cream-toppings',
+        'is_active' => true,
+    ]);
+    $addOn = AddOn::factory()->create([
+        'add_on_group_id' => $group->id,
+        'name' => 'Rainbow Sprinkles',
+        'price' => '40.00',
+        'is_active' => true,
+    ]);
+    $addOn->categories()->sync([$limca->id, $coffee->id]);
+
+    $this->getJson('/api/v1/catalog/products/classic-limca-assigned')
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data.add_on_groups')
+        ->assertJsonPath('data.add_on_groups.0.add_ons.0.name', 'Rainbow Sprinkles');
+
+    $this->getJson('/api/v1/catalog/products/cafe-latte')
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data.add_on_groups')
+        ->assertJsonPath('data.add_on_groups.0.add_ons.0.name', 'Rainbow Sprinkles');
+});
+
+test('cart accepts add-ons assigned to a product category outside the legacy allowlist', function () {
+    $user = User::factory()->create();
+    $coffee = Category::factory()->create([
+        'slug' => 'coffee',
+        'is_active' => true,
+    ]);
+    $product = Product::factory()->for($coffee)->create([
+        'base_price' => '300.00',
+        'is_active' => true,
+        'is_available' => true,
+    ]);
+    $group = AddOnGroup::factory()->create([
+        'slug' => 'ice-cream-toppings',
+        'is_active' => true,
+    ]);
+    $addOn = AddOn::factory()->create([
+        'add_on_group_id' => $group->id,
+        'name' => 'Extra Shot',
+        'price' => '50.00',
+        'is_active' => true,
+    ]);
+    $addOn->categories()->sync([$coffee->id]);
+
+    $this->actingAs($user)
+        ->postJson('/api/v1/cart/items', [
+            'product_id' => $product->id,
+            'add_on_ids' => [$addOn->id],
+            'quantity' => 1,
+        ])
+        ->assertSuccessful()
+        ->assertJsonPath('data.items.0.unit_price', '350.00');
 });
 
 test('empty add-on groups are hidden for eligible products', function () {

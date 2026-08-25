@@ -11,7 +11,7 @@ import LoadingState from '../components/storefront/LoadingState';
 import { useCart } from '../contexts/CartContext';
 import { useActiveOrders } from '../contexts/ActiveOrdersContext';
 import { useAuth } from '../contexts/AuthContext';
-import { normalizeApiError, firstFieldError } from '../lib/errors';
+import { extractCouponError, firstFieldError, normalizeApiError } from '../lib/errors';
 import { readOrderType, writeOrderType } from '../lib/orderTypeStorage';
 
 function formatMoney(value) {
@@ -28,7 +28,7 @@ function isImageFile(file) {
 export default function CheckoutPage() {
     const navigate = useNavigate();
     const { selectedBranch, branches: outletBranches = [] } = useOutletContext() ?? {};
-    const { cart, loading: cartLoading, refreshCart } = useCart();
+    const { cart, loading: cartLoading, refreshCart, applyCoupon, removeCoupon } = useCart();
     const { notifyActiveOrderCreated } = useActiveOrders();
     const { user } = useAuth();
 
@@ -39,6 +39,7 @@ export default function CheckoutPage() {
     const [submitting, setSubmitting] = useState(false);
     const submittingRef = useRef(false);
     const profilePrefillApplied = useRef(false);
+    const couponBusyRef = useRef(false);
     const [error, setError] = useState(null);
     const [fieldErrors, setFieldErrors] = useState({});
 
@@ -53,16 +54,20 @@ export default function CheckoutPage() {
     const [deliveryCity, setDeliveryCity] = useState('Karachi');
     const [deliveryInstructions, setDeliveryInstructions] = useState('');
     const [pickupNotes, setPickupNotes] = useState('');
+    const [tableNumber, setTableNumber] = useState('');
     const [customerNotes, setCustomerNotes] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('');
     const [proofFile, setProofFile] = useState(null);
     const [proofPreviewUrl, setProofPreviewUrl] = useState(null);
     const [proofError, setProofError] = useState(null);
+    const [couponCode, setCouponCode] = useState('');
+    const [couponBusy, setCouponBusy] = useState(false);
+    const [couponError, setCouponError] = useState(null);
 
     const handleTypeChange = (nextType) => {
         setType(nextType);
 
-        if (nextType === 'delivery' || nextType === 'takeaway') {
+        if (nextType === 'delivery' || nextType === 'takeaway' || nextType === 'dine_in') {
             writeOrderType(nextType);
         }
     };
@@ -102,6 +107,14 @@ export default function CheckoutPage() {
             cancelled = true;
         };
     }, [selectedBranch, outletBranches]);
+
+    useEffect(() => {
+        if (!branchId) {
+            return;
+        }
+
+        refreshCart({ branch_id: branchId }).catch(() => {});
+    }, [branchId, refreshCart]);
 
     useEffect(() => {
         if (!branchId || type !== 'delivery') {
@@ -200,6 +213,13 @@ export default function CheckoutPage() {
         }
     }, [user, type]);
 
+    useEffect(() => {
+        if (cart?.coupon_message) {
+            setCouponError(cart.coupon_message);
+            setCouponCode('');
+        }
+    }, [cart?.coupon_message]);
+
     const selectedZone = useMemo(
         () => zones.find((zone) => String(zone.id) === String(deliveryZoneId)) ?? null,
         [zones, deliveryZoneId],
@@ -211,9 +231,63 @@ export default function CheckoutPage() {
     );
 
     const estimatedDeliveryFee = type === 'delivery' ? selectedZone?.delivery_fee ?? 0 : 0;
-    const estimatedDiscount = Number(cart?.discount_amount ?? 0);
+    const offerDiscount = Number(cart?.offer_discount_amount ?? 0);
+    const couponDiscount = Number(cart?.coupon_discount_amount ?? 0);
     const estimatedTotal =
-        Number(cart?.subtotal ?? 0) - estimatedDiscount + Number(estimatedDeliveryFee);
+        Number(cart?.subtotal ?? 0) - offerDiscount - couponDiscount + Number(estimatedDeliveryFee);
+    const appliedCoupon = cart?.applied_coupon ?? null;
+
+    const handleApplyCoupon = async (event) => {
+        event.preventDefault();
+
+        if (couponBusyRef.current) {
+            return;
+        }
+
+        const code = couponCode.trim();
+        if (!code) {
+            setCouponError('Invalid coupon code.');
+            return;
+        }
+
+        couponBusyRef.current = true;
+        setCouponBusy(true);
+        setCouponError(null);
+
+        try {
+            await applyCoupon({
+                coupon_code: code,
+                ...(branchId ? { branch_id: Number(branchId) } : {}),
+            });
+            setCouponCode('');
+            setCouponError(null);
+        } catch (err) {
+            setCouponError(extractCouponError(err, 'apply'));
+        } finally {
+            couponBusyRef.current = false;
+            setCouponBusy(false);
+        }
+    };
+
+    const handleRemoveCoupon = async () => {
+        if (couponBusyRef.current) {
+            return;
+        }
+
+        couponBusyRef.current = true;
+        setCouponBusy(true);
+        setCouponError(null);
+
+        try {
+            await removeCoupon();
+            setCouponError(null);
+        } catch (err) {
+            setCouponError(extractCouponError(err, 'remove'));
+        } finally {
+            couponBusyRef.current = false;
+            setCouponBusy(false);
+        }
+    };
 
     if (cartLoading || loadingMeta) {
         return <LoadingState label="Preparing checkout…" />;
@@ -273,6 +347,10 @@ export default function CheckoutPage() {
             payload.pickup_notes = pickupNotes || null;
         }
 
+        if (type === 'dine_in') {
+            payload.table_number = tableNumber;
+        }
+
         let createdOrder = null;
 
         try {
@@ -313,6 +391,11 @@ export default function CheckoutPage() {
             const normalized = normalizeApiError(err);
             setError(normalized);
             setFieldErrors(normalized.errors ?? {});
+            const couponMessage = firstFieldError(normalized.errors, 'coupon_code');
+            if (couponMessage) {
+                setCouponError(couponMessage);
+                await refreshCart(branchId ? { branch_id: branchId } : {});
+            }
         } finally {
             submittingRef.current = false;
             setSubmitting(false);
@@ -336,6 +419,7 @@ export default function CheckoutPage() {
                             {[
                                 ['delivery', 'Delivery'],
                                 ['takeaway', 'Takeaway'],
+                                ['dine_in', 'Dine-In'],
                             ].map(([value, label]) => (
                                 <label
                                     key={value}
@@ -448,6 +532,24 @@ export default function CheckoutPage() {
                         </label>
                     ) : null}
 
+                    {type === 'dine_in' ? (
+                        <label className="block space-y-1 text-sm">
+                            <span className="font-medium text-stone-700">Table number</span>
+                            <input
+                                type="text"
+                                required
+                                value={tableNumber}
+                                onChange={(event) => setTableNumber(event.target.value)}
+                                className="w-full rounded-lg border border-stone-300 px-3 py-2"
+                            />
+                            {firstFieldError(fieldErrors, 'table_number') ? (
+                                <span className="text-xs text-red-600">
+                                    {firstFieldError(fieldErrors, 'table_number')}
+                                </span>
+                            ) : null}
+                        </label>
+                    ) : null}
+
                     <label className="block space-y-1 text-sm">
                         <span className="font-medium text-stone-700">Order notes</span>
                         <textarea
@@ -555,14 +657,90 @@ export default function CheckoutPage() {
                                 <span>Subtotal</span>
                                 <span>{formatMoney(cart.subtotal)}</span>
                             </div>
-                            {estimatedDiscount > 0 ? (
+
+                            <div className="border-t border-dashed border-stone-200 py-3">
+                                <p className="font-medium text-stone-900">Have a coupon?</p>
+                                <p className="mt-0.5 text-xs text-stone-500">
+                                    Enter your coupon code to apply your discount.
+                                </p>
+
+                                {appliedCoupon ? (
+                                    <div className="mt-3 rounded-xl bg-emerald-50 px-3 py-3 text-sm text-emerald-900">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="font-semibold">✓ Coupon applied</p>
+                                                <p className="mt-0.5">{appliedCoupon.code}</p>
+                                                <p className="mt-1 text-xs">
+                                                    You saved {formatMoney(appliedCoupon.discount_amount)}
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                disabled={couponBusy || submitting}
+                                                onClick={handleRemoveCoupon}
+                                                className="shrink-0 text-sm font-medium text-emerald-900 underline disabled:opacity-60"
+                                            >
+                                                {couponBusy ? 'Removing…' : 'Remove'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                                        <label className="sr-only" htmlFor="checkout-coupon-code">
+                                            Coupon code
+                                        </label>
+                                        <input
+                                            id="checkout-coupon-code"
+                                            name="coupon_code"
+                                            value={couponCode}
+                                            onChange={(event) => {
+                                                setCouponCode(event.target.value);
+                                                setCouponError(null);
+                                            }}
+                                            onKeyDown={(event) => {
+                                                if (event.key === 'Enter') {
+                                                    handleApplyCoupon(event);
+                                                }
+                                            }}
+                                            disabled={couponBusy || submitting}
+                                            placeholder="Enter coupon code"
+                                            autoComplete="off"
+                                            aria-invalid={Boolean(couponError)}
+                                            aria-describedby={couponError ? 'checkout-coupon-error' : undefined}
+                                            className="w-full flex-1 rounded-xl border border-stone-300 px-3 py-2 text-sm disabled:opacity-60"
+                                        />
+                                        <button
+                                            type="button"
+                                            disabled={couponBusy || submitting}
+                                            onClick={handleApplyCoupon}
+                                            className="rounded-xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-800 disabled:opacity-60"
+                                        >
+                                            {couponBusy ? 'Applying…' : 'Apply'}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {couponError ? (
+                                    <p id="checkout-coupon-error" className="mt-2 text-xs text-red-600" role="alert">
+                                        {couponError}
+                                    </p>
+                                ) : null}
+                            </div>
+
+                            {offerDiscount > 0 ? (
                                 <div className="flex justify-between text-stone-600">
                                     <span>
                                         {cart.discount_label
                                             ? `Discount (${cart.discount_label})`
                                             : 'Discount'}
                                     </span>
-                                    <span>-{formatMoney(estimatedDiscount)}</span>
+                                    <span>-{formatMoney(offerDiscount)}</span>
+                                </div>
+                            ) : null}
+                            {couponDiscount > 0 && appliedCoupon ? (
+                                <div className="flex justify-between text-stone-600">
+                                    <span>Coupon - {appliedCoupon.code}</span>
+                                    <span>-{formatMoney(couponDiscount)}</span>
                                 </div>
                             ) : null}
                             <div className="flex justify-between text-stone-600">

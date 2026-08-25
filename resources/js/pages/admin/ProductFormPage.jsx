@@ -37,6 +37,8 @@ const emptyForm = {
     is_available: true,
     is_featured: false,
     sort_order: 0,
+    stock_quantity: '',
+    low_stock_threshold: 5,
     add_on_group_ids: [],
 };
 
@@ -105,6 +107,8 @@ export default function ProductFormPage() {
                     is_available: Boolean(product.is_available),
                     is_featured: Boolean(product.is_featured),
                     sort_order: product.sort_order ?? 0,
+                    stock_quantity: product.stock_quantity ?? '',
+                    low_stock_threshold: product.low_stock_threshold ?? 5,
                     add_on_group_ids: (product.add_on_groups ?? []).map((group) => group.id),
                 });
                 setVariants(product.variants ?? []);
@@ -150,6 +154,11 @@ export default function ProductFormPage() {
             category_id: Number(form.category_id),
             base_price: Number(form.base_price),
             sort_order: Number(form.sort_order),
+            stock_quantity: form.stock_quantity === '' || form.stock_quantity === null ? null : Number(form.stock_quantity),
+            low_stock_threshold:
+                form.low_stock_threshold === '' || form.low_stock_threshold === null
+                    ? null
+                    : Number(form.low_stock_threshold),
             add_on_group_ids: form.add_on_group_ids,
         };
 
@@ -389,6 +398,25 @@ export default function ProductFormPage() {
                             min="0"
                             value={form.sort_order}
                             onChange={(event) => updateField('sort_order', event.target.value)}
+                            errors={fieldErrors}
+                        />
+                        <AdminFormField
+                            label="Stock quantity"
+                            name="stock_quantity"
+                            type="number"
+                            min="0"
+                            value={form.stock_quantity}
+                            onChange={(event) => updateField('stock_quantity', event.target.value)}
+                            errors={fieldErrors}
+                            hint="Leave blank for unlimited stock."
+                        />
+                        <AdminFormField
+                            label="Low stock threshold"
+                            name="low_stock_threshold"
+                            type="number"
+                            min="0"
+                            value={form.low_stock_threshold}
+                            onChange={(event) => updateField('low_stock_threshold', event.target.value)}
                             errors={fieldErrors}
                         />
                         <AdminFormField

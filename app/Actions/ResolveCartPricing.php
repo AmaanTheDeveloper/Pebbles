@@ -26,7 +26,7 @@ class ResolveCartPricing
      *     line_total: string
      * }
      */
-    public function handle(int $productId, ?int $variantId, array $addOnIds, int $quantity): array
+    public function handle(int $productId, ?int $variantId, array $addOnIds, int $quantity, int $stockCredit = 0): array
     {
         if ($quantity < 1 || $quantity > 99) {
             throw ValidationException::withMessages([
@@ -53,6 +53,14 @@ class ResolveCartPricing
                 'product_id' => 'The selected product is currently unavailable.',
             ]);
         }
+
+        if (! $product->isInStock() && $stockCredit < 1) {
+            throw ValidationException::withMessages([
+                'product_id' => 'The selected product is currently unavailable.',
+            ]);
+        }
+
+        $product->assertSufficientStock($quantity, $stockCredit);
 
         $variant = $this->resolveVariant($product, $variantId);
         $addOns = $this->resolveAddOns($product, $addOnIds);
@@ -112,7 +120,7 @@ class ResolveCartPricing
     {
         $addOnIds = array_values(array_unique(array_map('intval', $addOnIds)));
 
-        if ($addOnIds !== [] && ! ProductAddOnRules::categoryAllowsAddOns($product->category?->slug)) {
+        if ($addOnIds !== [] && $product->category_id === null) {
             throw ValidationException::withMessages([
                 'add_on_ids' => 'Add-ons are not available for this product.',
             ]);

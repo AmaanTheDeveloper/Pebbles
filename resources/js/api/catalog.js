@@ -52,7 +52,9 @@ export async function fetchDeliveryZones(branchSlug) {
 }
 
 export async function fetchOffers() {
-    const response = await api.get('/api/v1/catalog/offers');
+    return cachedCatalogFetch('offers', async () => {
+        const response = await api.get('/api/v1/catalog/offers');
 
-    return unwrap(response);
+        return unwrap(response);
+    }, [], 2 * 60 * 1000);
 }

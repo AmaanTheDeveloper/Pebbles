@@ -15,6 +15,7 @@ use App\Models\ProductVariant;
 use App\Models\Setting;
 use App\Models\SiteContent;
 use App\Models\User;
+use App\Support\AboutContent;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -230,6 +231,7 @@ class DatabaseSeeder extends Seeder
             );
         });
 
+        // Legacy sample only - banners are deprecated in favor of Homepage CMS.
         Banner::query()->updateOrCreate(
             ['title' => 'Welcome to Pebbles'],
             [
@@ -241,36 +243,8 @@ class DatabaseSeeder extends Seeder
         );
 
         SiteContent::query()->updateOrCreate(
-            ['key' => 'branding'],
-            ['content' => [
-                'name' => 'Pebbles',
-                'tagline' => 'Freshly baked happiness',
-            ]],
-        );
-
-        SiteContent::query()->updateOrCreate(
-            ['key' => 'homepage'],
-            ['content' => [
-                'hero_title' => 'Order from Pebbles',
-                'hero_subtitle' => 'Delivery, takeaway, and dine-in',
-            ]],
-        );
-
-        SiteContent::query()->updateOrCreate(
-            ['key' => 'contact'],
-            ['content' => [
-                'email' => 'hello@pebbles.test',
-                'phone' => '021-111-732-253',
-                'address' => 'DHA Phase 7, Karachi',
-            ]],
-        );
-
-        SiteContent::query()->updateOrCreate(
-            ['key' => 'social_links'],
-            ['content' => [
-                'instagram' => 'https://instagram.com/pebbles',
-                'facebook' => 'https://facebook.com/pebbles',
-            ]],
+            ['key' => AboutContent::SITE_CONTENT_KEY],
+            ['content' => AboutContent::defaults()],
         );
 
         unset($superadmin);

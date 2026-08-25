@@ -45,3 +45,10 @@ export async function updateAddOnOption(groupId, optionId, payload) {
 
     return unwrap(response);
 }
+
+export async function fetchAssignableCategories(groupId) {
+    const response = await api.get(`/api/v1/admin/add-on-groups/${groupId}/assignable-categories`);
+    const payload = unwrap(response);
+
+    return Array.isArray(payload) ? payload : [];
+}

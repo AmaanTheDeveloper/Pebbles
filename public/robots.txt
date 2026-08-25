@@ -1,2 +1,11 @@
 User-agent: *
-Disallow:
+Disallow: /admin
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /profile
+Disallow: /verify-email
+Disallow: /order-confirmation
+Disallow: /reset-password
+
+Sitemap: /sitemap.xml

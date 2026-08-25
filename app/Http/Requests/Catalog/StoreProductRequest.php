@@ -27,6 +27,8 @@ class StoreProductRequest extends FormRequest
             'is_available' => ['sometimes', 'boolean'],
             'is_featured' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'stock_quantity' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'low_stock_threshold' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'add_on_group_ids' => ['sometimes', 'array'],
             'add_on_group_ids.*' => ['integer', 'exists:add_on_groups,id'],
         ];

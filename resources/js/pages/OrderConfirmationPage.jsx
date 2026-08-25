@@ -1,15 +1,66 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { useMemo } from 'react';
+import { fetchOrder } from '../api/orders';
 import OrderSuccessCelebration from '../components/orders/OrderSuccessCelebration';
 import PaymentStatusBadge from '../components/orders/PaymentStatusBadge';
+import ErrorState from '../components/storefront/ErrorState';
+import LoadingState from '../components/storefront/LoadingState';
+import { useAuth } from '../contexts/AuthContext';
+import { normalizeApiError } from '../lib/errors';
 import { formatMoney } from '../lib/format';
 import { shouldCelebrateNewOrder } from '../lib/orderSuccessCelebration';
 
 export default function OrderConfirmationPage() {
     const { orderNumber } = useParams();
     const location = useLocation();
-    const order = location.state?.order;
-    const branchName = location.state?.branchName ?? null;
+    const { isEmailVerified } = useAuth();
+    const [order, setOrder] = useState(location.state?.order ?? null);
+    const [branchName, setBranchName] = useState(location.state?.branchName ?? null);
+    const [loading, setLoading] = useState(!location.state?.order && Boolean(orderNumber));
+    const [error, setError] = useState(null);
+    const fetchedFor = useRef(null);
+
+    useEffect(() => {
+        if (location.state?.order || !orderNumber) {
+            return undefined;
+        }
+
+        if (fetchedFor.current === orderNumber) {
+            return undefined;
+        }
+
+        let cancelled = false;
+        fetchedFor.current = orderNumber;
+        setLoading(true);
+        setError(null);
+
+        fetchOrder(orderNumber)
+            .then((payload) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setOrder(payload);
+                setBranchName(payload?.branch?.name ?? null);
+            })
+            .catch((err) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setError(normalizeApiError(err));
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [location.state?.order, orderNumber]);
+
     const resolvedNumber = order?.order_number || orderNumber;
     const requiresProof = order?.payment?.requires_proof;
 
@@ -21,6 +72,35 @@ export default function OrderConfirmationPage() {
             }),
         [location.state?.celebrate, resolvedNumber],
     );
+
+    if (loading) {
+        return <LoadingState label="Loading order confirmation…" />;
+    }
+
+    if (error) {
+        return (
+            <ErrorState
+                message={error.message || 'Unable to load this order.'}
+                onRetry={() => {
+                    fetchedFor.current = null;
+                    setOrder(null);
+                    setError(null);
+                    setLoading(true);
+                    fetchOrder(orderNumber)
+                        .then((payload) => {
+                            setOrder(payload);
+                            setBranchName(payload?.branch?.name ?? null);
+                        })
+                        .catch((err) => setError(normalizeApiError(err)))
+                        .finally(() => setLoading(false));
+                }}
+            />
+        );
+    }
+
+    if (!order && !resolvedNumber) {
+        return <ErrorState message="Order confirmation is unavailable." />;
+    }
 
     return (
         <div className="mx-auto max-w-lg space-y-6 text-center">
@@ -37,6 +117,12 @@ export default function OrderConfirmationPage() {
                     <p className="mx-auto max-w-md text-base leading-relaxed text-brand-muted">
                         Your order has been received and we&apos;re getting it ready.
                     </p>
+                    {order?.status === 'confirmed' && isEmailVerified ? (
+                        <p className="mx-auto max-w-md text-sm leading-relaxed text-brand-muted">
+                            Order confirmed — a confirmation email with your full order details has been sent to your
+                            verified email address.
+                        </p>
+                    ) : null}
                     {resolvedNumber ? (
                         <p className="text-lg font-semibold text-brand-green">
                             Order #{resolvedNumber}
@@ -82,7 +168,7 @@ export default function OrderConfirmationPage() {
                             </dd>
                         </div>
                     ) : null}
-                    {order?.total !== undefined ? (
+                    {order?.total !== undefined && order?.total !== null ? (
                         <div className="flex justify-between gap-3 border-t border-stone-200 pt-3 text-base">
                             <dt className="font-semibold text-stone-900">Total</dt>
                             <dd className="font-semibold text-amber-950">{formatMoney(order.total)}</dd>

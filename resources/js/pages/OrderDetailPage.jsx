@@ -19,6 +19,7 @@ import PaymentProofUpload from '../components/orders/PaymentProofUpload';
 import PaymentStatusBadge from '../components/orders/PaymentStatusBadge';
 import OrderCustomerActions from '../components/orders/OrderCustomerActions';
 import ReorderOrderButton from '../components/orders/ReorderOrderButton';
+import DownloadOrderReceiptButton from '../components/orders/DownloadOrderReceiptButton';
 import { normalizeApiError } from '../lib/errors';
 import { formatDate, humanizeStatus } from '../lib/format';
 import { getCustomerStatusLabel, isActiveOrder } from '../lib/orderTracking';
@@ -165,11 +166,10 @@ export default function OrderDetailPage() {
                     <div className="mt-2 flex justify-end">
                         <PaymentStatusBadge status={payment?.status} />
                     </div>
-                    {!active ? (
-                        <div className="mt-3">
-                            <ReorderOrderButton orderNumber={order.order_number} />
-                        </div>
-                    ) : null}
+                    <div className="mt-3 flex flex-wrap justify-end gap-2">
+                        <DownloadOrderReceiptButton orderNumber={order.order_number} />
+                        {!active ? <ReorderOrderButton orderNumber={order.order_number} /> : null}
+                    </div>
                 </div>
             </div>
 

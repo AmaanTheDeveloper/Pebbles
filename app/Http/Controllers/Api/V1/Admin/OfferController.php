@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Enums\OfferScope;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreOfferRequest;
 use App\Http\Requests\Admin\UpdateOfferRequest;
 use App\Models\Offer;
+use App\Support\ProductOfferPricing;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -21,6 +23,7 @@ class OfferController extends Controller
         $type = $request->string('type')->toString();
 
         $offers = Offer::query()
+            ->with(['categories:id,name', 'products:id,name'])
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($builder) use ($search): void {
                     $builder
@@ -42,25 +45,30 @@ class OfferController extends Controller
 
     public function store(StoreOfferRequest $request): JsonResponse
     {
-        $data = collect($request->validated())->except('image')->all();
+        $data = collect($request->validated())->except(['image', 'category_ids', 'product_ids'])->all();
 
         if ($request->hasFile('image')) {
             $data['image_path'] = $this->storeOfferImage($request->file('image'));
         }
 
         $offer = Offer::query()->create($data);
+        $this->syncOfferTargets($offer, $request->validated());
+        ProductOfferPricing::flush();
 
-        return response()->json(['data' => $this->transformOffer($offer)], 201);
+        return response()->json(['data' => $this->transformOffer($offer->fresh(['categories:id,name', 'products:id,name']))], 201);
     }
 
     public function show(Offer $offer): JsonResponse
     {
+        $offer->load(['categories:id,name', 'products:id,name']);
+
         return response()->json(['data' => $this->transformOffer($offer)]);
     }
 
     public function update(UpdateOfferRequest $request, Offer $offer): JsonResponse
     {
-        $data = collect($request->validated())->except('image')->all();
+        $validated = $request->validated();
+        $data = collect($validated)->except(['image', 'category_ids', 'product_ids'])->all();
 
         if ($request->hasFile('image')) {
             $previousPath = $offer->image_path;
@@ -69,8 +77,10 @@ class OfferController extends Controller
         }
 
         $offer->update($data);
+        $this->syncOfferTargets($offer, $validated, partial: true);
+        ProductOfferPricing::flush();
 
-        return response()->json(['data' => $this->transformOffer($offer->fresh())]);
+        return response()->json(['data' => $this->transformOffer($offer->fresh(['categories:id,name', 'products:id,name']))]);
     }
 
     public function destroy(Offer $offer): JsonResponse
@@ -78,6 +88,7 @@ class OfferController extends Controller
         $path = $offer->image_path;
         $offer->delete();
         $this->deleteStoredOfferImage($path);
+        ProductOfferPricing::flush();
 
         return response()->json(null, 204);
     }
@@ -99,10 +110,52 @@ class OfferController extends Controller
     }
 
     /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function syncOfferTargets(Offer $offer, array $validated, bool $partial = false): void
+    {
+        if (
+            $partial
+            && ! array_key_exists('scope', $validated)
+            && ! array_key_exists('category_ids', $validated)
+            && ! array_key_exists('product_ids', $validated)
+        ) {
+            return;
+        }
+
+        $scope = $offer->scope ?? OfferScope::EntireStore;
+
+        if ($scope === OfferScope::EntireStore) {
+            $offer->categories()->sync([]);
+            $offer->products()->sync([]);
+
+            return;
+        }
+
+        if ($scope === OfferScope::Categories) {
+            $offer->products()->sync([]);
+            if (! $partial || array_key_exists('category_ids', $validated) || array_key_exists('scope', $validated)) {
+                $offer->categories()->sync($validated['category_ids'] ?? []);
+            }
+
+            return;
+        }
+
+        if ($scope === OfferScope::Products) {
+            $offer->categories()->sync([]);
+            if (! $partial || array_key_exists('product_ids', $validated) || array_key_exists('scope', $validated)) {
+                $offer->products()->sync($validated['product_ids'] ?? []);
+            }
+        }
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function transformOffer(Offer $offer): array
     {
+        $offer->loadMissing(['categories:id,name', 'products:id,name']);
+
         return [
             'id' => $offer->id,
             'title' => $offer->title,
@@ -115,6 +168,19 @@ class OfferController extends Controller
                 'url' => $offer->imageUrl(),
             ],
             'offer_value' => $offer->offer_value,
+            'scope' => $offer->scope?->value ?? OfferScope::EntireStore->value,
+            'scope_label' => $offer->scope?->label() ?? OfferScope::EntireStore->label(),
+            'maximum_discount_amount' => $offer->maximum_discount_amount,
+            'category_ids' => $offer->categories->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
+            'product_ids' => $offer->products->pluck('id')->map(fn ($id) => (int) $id)->values()->all(),
+            'categories' => $offer->categories->map(fn ($category) => [
+                'id' => $category->id,
+                'name' => $category->name,
+            ])->values()->all(),
+            'products' => $offer->products->map(fn ($product) => [
+                'id' => $product->id,
+                'name' => $product->name,
+            ])->values()->all(),
             'cta_label' => $offer->cta_label,
             'cta_url' => $offer->cta_url,
             'starts_at' => $offer->starts_at?->toIso8601String(),

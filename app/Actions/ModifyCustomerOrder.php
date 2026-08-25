@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enums\OrderType;
 use App\Enums\PaymentStatus;
 use App\Events\OrderModifiedByCustomer;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderItemAddOn;
@@ -12,6 +13,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\User;
 use App\Support\CustomerOrderActions;
 use App\Support\Money;
+use App\Support\ProductStock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -20,6 +22,7 @@ class ModifyCustomerOrder
     public function __construct(
         private ResolveCartPricing $resolveCartPricing,
         private ResolveOfferDiscount $resolveOfferDiscount,
+        private ResolveCouponDiscount $resolveCouponDiscount,
     ) {}
 
     /**
@@ -50,23 +53,48 @@ class ModifyCustomerOrder
                 ]);
             }
 
+            $oldQuantitiesByProductId = $locked->items
+                ->groupBy('product_id')
+                ->map(fn ($orderItems) => (int) $orderItems->sum('quantity'));
+
             $pricedLines = [];
             $subtotal = 0.0;
+            $newQuantitiesByProductId = [];
 
             foreach ($items as $item) {
                 $quantity = (int) $item['quantity'];
+                $productId = (int) $item['product_id'];
                 $addOnIds = array_values(array_map('intval', $item['add_on_ids'] ?? []));
+                $stockCredit = (int) ($oldQuantitiesByProductId[$productId] ?? 0);
 
                 $priced = $this->resolveCartPricing->handle(
-                    (int) $item['product_id'],
+                    $productId,
                     isset($item['product_variant_id']) ? (int) $item['product_variant_id'] : null,
                     $addOnIds,
                     $quantity,
+                    $stockCredit,
+                );
+
+                // Aggregate check across lines of the same product; line credit covers order-held units.
+                $priced['product']->assertSufficientStock(
+                    ($newQuantitiesByProductId[$productId] ?? 0) + $quantity,
+                    $stockCredit,
                 );
 
                 $priced['quantity'] = $quantity;
                 $pricedLines[] = $priced;
                 $subtotal += (float) $priced['line_total'];
+                $newQuantitiesByProductId[$productId] = ($newQuantitiesByProductId[$productId] ?? 0) + $quantity;
+            }
+
+            $deltas = [];
+            foreach (array_unique([...$oldQuantitiesByProductId->keys()->all(), ...array_keys($newQuantitiesByProductId)]) as $productId) {
+                $deltas[(int) $productId] = ($newQuantitiesByProductId[$productId] ?? 0)
+                    - (int) ($oldQuantitiesByProductId[$productId] ?? 0);
+            }
+
+            if (! $preview) {
+                ProductStock::applyDeltas($deltas);
             }
 
             $locked->loadMissing('deliveryZone');
@@ -83,8 +111,42 @@ class ModifyCustomerOrder
 
             $previousTotal = Money::of($locked->grand_total);
             $subtotalMoney = Money::of($subtotal);
-            $offerDiscount = $this->resolveOfferDiscount->handle($subtotal);
-            $discountAmount = $offerDiscount['discount_amount'];
+            $offerDiscount = $this->resolveOfferDiscount->handle(
+                $this->resolveOfferDiscount->linesFromPriced($pricedLines)
+            );
+            $offerDiscountAmount = $offerDiscount['discount_amount'];
+
+            $couponId = $locked->coupon_id;
+            $couponCode = $locked->coupon_code;
+            $couponDiscountAmount = Money::of(0);
+
+            if ($locked->coupon_id !== null) {
+                $coupon = Coupon::query()
+                    ->whereKey($locked->coupon_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                $resolved = $coupon === null
+                    ? null
+                    : $this->resolveCouponDiscount->tryResolve(
+                        $coupon,
+                        $user,
+                        $subtotal,
+                        $offerDiscountAmount,
+                        (int) $locked->branch_id,
+                    );
+
+                if ($resolved === null) {
+                    $couponId = null;
+                    $couponCode = null;
+                } else {
+                    $couponId = $resolved['coupon_id'];
+                    $couponCode = $resolved['coupon_code'];
+                    $couponDiscountAmount = $resolved['discount_amount'];
+                }
+            }
+
+            $discountAmount = Money::add($offerDiscountAmount, $couponDiscountAmount);
             $discountedSubtotal = Money::subtract($subtotalMoney, $discountAmount);
             $deliveryFee = Money::of($locked->delivery_fee);
             $grandTotal = Money::add($discountedSubtotal, $deliveryFee);
@@ -104,6 +166,9 @@ class ModifyCustomerOrder
             $updates = [
                 'subtotal' => $subtotalMoney,
                 'discount_amount' => $discountAmount,
+                'coupon_id' => $couponId,
+                'coupon_code' => $couponCode,
+                'coupon_discount_amount' => $couponDiscountAmount,
                 'grand_total' => $grandTotal,
             ];
 

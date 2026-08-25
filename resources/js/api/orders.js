@@ -39,6 +39,21 @@ export async function fetchOrderStatusHistory(orderNumber) {
     return unwrap(response);
 }
 
+export async function downloadOrderReceipt(orderNumber) {
+    const response = await api.get(`/api/v1/orders/${orderNumber}/receipt`, {
+        responseType: 'blob',
+    });
+
+    const contentDisposition = response.headers?.['content-disposition'] ?? '';
+    const matched = /filename="?([^"]+)"?/i.exec(contentDisposition);
+    const filename = matched?.[1] || `Pebbles-Order-${orderNumber}.pdf`;
+
+    return {
+        blob: response.data,
+        filename,
+    };
+}
+
 export async function selectOrderPayment(orderNumber, payload) {
     const response = await api.post(`/api/v1/orders/${orderNumber}/payment`, payload);
 

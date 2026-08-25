@@ -33,11 +33,15 @@ class Branch extends Model
         'opening_hours',
         'is_active',
         'display_order',
+        'preparation_minutes',
+        'delivery_minutes',
     ];
 
     protected $attributes = [
         'is_active' => true,
         'display_order' => 0,
+        'preparation_minutes' => 20,
+        'delivery_minutes' => 30,
     ];
 
     protected function casts(): array
@@ -48,6 +52,8 @@ class Branch extends Model
             'opening_hours' => 'array',
             'is_active' => 'boolean',
             'display_order' => 'integer',
+            'preparation_minutes' => 'integer',
+            'delivery_minutes' => 'integer',
         ];
     }
 

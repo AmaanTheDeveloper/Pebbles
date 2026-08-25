@@ -4,11 +4,13 @@ use App\Http\Controllers\Api\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Api\Auth\VerifyEmailController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\V1\Admin\AboutController as AdminAboutController;
 use App\Http\Controllers\Api\V1\Admin\AddOnGroupController as AdminAddOnGroupController;
 use App\Http\Controllers\Api\V1\Admin\AnalyticsController as AdminAnalyticsController;
 use App\Http\Controllers\Api\V1\Admin\BranchController as AdminBranchController;
 use App\Http\Controllers\Api\V1\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Api\V1\Admin\ContactMessageController as AdminContactMessageController;
+use App\Http\Controllers\Api\V1\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\V1\Admin\DeliveryZoneController as AdminDeliveryZoneController;
 use App\Http\Controllers\Api\V1\Admin\GalleryController as AdminGalleryController;
@@ -24,6 +26,8 @@ use App\Http\Controllers\Api\V1\Admin\SettingController as AdminSettingControlle
 use App\Http\Controllers\Api\V1\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\V1\Cart\CartController;
 use App\Http\Controllers\Api\V1\Cart\CartItemController;
+use App\Http\Controllers\Api\V1\CartCouponController;
+use App\Http\Controllers\Api\V1\Catalog\AboutController as CatalogAboutController;
 use App\Http\Controllers\Api\V1\Catalog\BranchController as CatalogBranchController;
 use App\Http\Controllers\Api\V1\Catalog\BrandingController as CatalogBrandingController;
 use App\Http\Controllers\Api\V1\Catalog\CategoryController as CatalogCategoryController;
@@ -38,8 +42,8 @@ use App\Http\Controllers\Api\V1\Catalog\ProductController as CatalogProductContr
 use App\Http\Controllers\Api\V1\Catalog\ReviewController as CatalogReviewController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\CustomerOrderController;
-use App\Http\Controllers\Api\V1\Internal\PaymentVerificationController;
 use App\Http\Controllers\Api\V1\OrderPaymentController;
+use App\Http\Controllers\Api\V1\OrderReceiptController;
 use App\Http\Controllers\Api\V1\PaymentMethodController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +54,7 @@ Route::prefix('v1/catalog')->group(function () {
     Route::get('/products/{product}', [CatalogProductController::class, 'show']);
     Route::get('/branches', [CatalogBranchController::class, 'index']);
     Route::get('/branding', [CatalogBrandingController::class, 'show']);
+    Route::get('/about', [CatalogAboutController::class, 'show']);
     Route::get('/popup', [CatalogPopupController::class, 'show']);
     Route::get('/delivery-zones', [CatalogDeliveryZoneController::class, 'index']);
     Route::get('/offers', [CatalogOfferController::class, 'index']);
@@ -65,10 +70,20 @@ Route::prefix('v1/catalog')->group(function () {
 
 Route::get('/v1/payment-methods', [PaymentMethodController::class, 'index']);
 
+Route::prefix('v1')->group(function () {
+    Route::get('/cart', [CartController::class, 'show']);
+    Route::delete('/cart', [CartController::class, 'destroy']);
+    Route::post('/cart/items', [CartItemController::class, 'store'])->middleware('throttle:cart-mutations');
+    Route::patch('/cart/items/{item}', [CartItemController::class, 'update'])->middleware('throttle:cart-mutations');
+    Route::delete('/cart/items/{item}', [CartItemController::class, 'destroy'])->middleware('throttle:cart-mutations');
+    Route::post('/cart/coupon', [CartCouponController::class, 'store'])->middleware('throttle:coupon-apply');
+    Route::delete('/cart/coupon', [CartCouponController::class, 'destroy'])->middleware('throttle:coupon-apply');
+});
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [UserController::class, 'show']);
 
-    Route::get('/orders/{order}', [OrderController::class, 'show']);
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->middleware('verified');
 
     Route::prefix('v1')->group(function () {
         Route::patch('/profile', [ProfileController::class, 'update']);
@@ -77,28 +92,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/profile/password', [ProfileController::class, 'updatePassword']);
         Route::delete('/profile/account', [ProfileController::class, 'destroy']);
 
-        Route::get('/cart', [CartController::class, 'show']);
-        Route::delete('/cart', [CartController::class, 'destroy']);
-        Route::post('/cart/items', [CartItemController::class, 'store']);
-        Route::patch('/cart/items/{item}', [CartItemController::class, 'update']);
-        Route::delete('/cart/items/{item}', [CartItemController::class, 'destroy']);
-        Route::post('/checkout', [CheckoutController::class, 'store']);
+        Route::middleware('verified')->group(function () {
+            Route::post('/checkout', [CheckoutController::class, 'store']);
 
-        Route::get('/orders/active-status', [CustomerOrderController::class, 'activeStatus']);
-        Route::get('/orders', [CustomerOrderController::class, 'index']);
-        Route::get('/orders/{order}', [CustomerOrderController::class, 'show']);
-        Route::get('/orders/{order}/status-history', [CustomerOrderController::class, 'statusHistory']);
-        Route::post('/orders/{order}/cancel', [CustomerOrderController::class, 'cancel']);
-        Route::post('/orders/{order}/modify/preview', [CustomerOrderController::class, 'previewModify']);
-        Route::post('/orders/{order}/modify', [CustomerOrderController::class, 'modify']);
-        Route::post('/orders/{order}/reorder', [CustomerOrderController::class, 'reorder']);
-        Route::post('/orders/{order}/payment', [OrderPaymentController::class, 'store']);
-        Route::post('/orders/{order}/payment/proof', [OrderPaymentController::class, 'storeProof']);
-        Route::get('/orders/{order}/payment/proof/{proof}', [OrderPaymentController::class, 'showProof']);
-
-        Route::middleware('role:super_admin,manager')->prefix('internal')->group(function () {
-            Route::post('/orders/{order}/payment/verify', [PaymentVerificationController::class, 'verify']);
-            Route::post('/orders/{order}/payment/reject', [PaymentVerificationController::class, 'reject']);
+            Route::get('/orders/active-status', [CustomerOrderController::class, 'activeStatus']);
+            Route::get('/orders', [CustomerOrderController::class, 'index']);
+            Route::get('/orders/{order}', [CustomerOrderController::class, 'show']);
+            Route::get('/orders/{order}/receipt', [OrderReceiptController::class, 'download']);
+            Route::get('/orders/{order}/status-history', [CustomerOrderController::class, 'statusHistory']);
+            Route::post('/orders/{order}/cancel', [CustomerOrderController::class, 'cancel']);
+            Route::post('/orders/{order}/modify/preview', [CustomerOrderController::class, 'previewModify']);
+            Route::post('/orders/{order}/modify', [CustomerOrderController::class, 'modify']);
+            Route::post('/orders/{order}/reorder', [CustomerOrderController::class, 'reorder']);
+            Route::post('/orders/{order}/payment', [OrderPaymentController::class, 'store']);
+            Route::post('/orders/{order}/payment/proof', [OrderPaymentController::class, 'storeProof']);
+            Route::get('/orders/{order}/payment/proof/{proof}', [OrderPaymentController::class, 'showProof']);
         });
 
         Route::middleware('role:super_admin,manager')->prefix('admin')->group(function () {
@@ -166,6 +174,7 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::get('/add-on-groups/{add_on_group}', [AdminAddOnGroupController::class, 'show']);
                 Route::patch('/add-on-groups/{add_on_group}', [AdminAddOnGroupController::class, 'update']);
                 Route::delete('/add-on-groups/{add_on_group}', [AdminAddOnGroupController::class, 'destroy']);
+                Route::get('/add-on-groups/{add_on_group}/assignable-categories', [AdminAddOnGroupController::class, 'assignableCategories']);
                 Route::post('/add-on-groups/{add_on_group}/options', [AdminAddOnGroupController::class, 'storeOption']);
                 Route::patch('/add-on-groups/{add_on_group}/options/{add_on}', [AdminAddOnGroupController::class, 'updateOption']);
 
@@ -186,6 +195,12 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::get('/offers/{offer}', [AdminOfferController::class, 'show']);
                 Route::patch('/offers/{offer}', [AdminOfferController::class, 'update']);
                 Route::delete('/offers/{offer}', [AdminOfferController::class, 'destroy']);
+
+                Route::get('/coupons', [AdminCouponController::class, 'index']);
+                Route::post('/coupons', [AdminCouponController::class, 'store']);
+                Route::get('/coupons/{coupon}', [AdminCouponController::class, 'show']);
+                Route::patch('/coupons/{coupon}', [AdminCouponController::class, 'update']);
+                Route::delete('/coupons/{coupon}', [AdminCouponController::class, 'destroy']);
 
                 Route::get('/gallery', [AdminGalleryController::class, 'index']);
                 Route::post('/gallery', [AdminGalleryController::class, 'store']);
@@ -224,10 +239,15 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::patch('/contact-messages/{contact_message}', [AdminContactMessageController::class, 'update']);
                 Route::delete('/contact-messages/{contact_message}', [AdminContactMessageController::class, 'destroy']);
 
+                Route::get('/about', [AdminAboutController::class, 'show']);
+                Route::patch('/about', [AdminAboutController::class, 'update']);
+
                 Route::get('/settings', [AdminSettingController::class, 'show']);
                 Route::patch('/settings', [AdminSettingController::class, 'update']);
                 Route::post('/settings/logo', [AdminSettingController::class, 'updateLogo']);
                 Route::delete('/settings/logo', [AdminSettingController::class, 'destroyLogo']);
+                Route::post('/settings/favicon', [AdminSettingController::class, 'updateFavicon']);
+                Route::delete('/settings/favicon', [AdminSettingController::class, 'destroyFavicon']);
                 Route::patch('/settings/popup', [AdminSettingController::class, 'updatePopup']);
                 Route::patch('/settings/payment', [AdminSettingController::class, 'updatePayment']);
                 Route::post('/settings/payment/jazzcash/qr', [AdminSettingController::class, 'updateJazzcashQrImage']);
@@ -239,11 +259,11 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::get('/email/verify/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
+        ->middleware(['signed', 'throttle:verification'])
         ->name('verification.verify');
 
     Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
-        ->middleware('throttle:6,1')
+        ->middleware('throttle:verification')
         ->name('verification.send');
 
     Route::get('/admin/ping', function () {

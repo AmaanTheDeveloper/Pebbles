@@ -9,6 +9,35 @@ import { AdminPageHeader, AdminPanel } from '../../layouts/AdminLayout';
 import { formatMoney } from '../../lib/format';
 import { normalizeApiError } from '../../lib/errors';
 
+function stockBadge(row) {
+    if (row.stock_quantity === null || row.stock_quantity === undefined) {
+        return (
+            <span className="rounded-full bg-stone-100 px-2 py-0.5 text-stone-600">Unlimited</span>
+        );
+    }
+
+    if (row.stock_quantity <= 0) {
+        return (
+            <span className="rounded-full bg-red-100 px-2 py-0.5 text-red-800">Out of stock</span>
+        );
+    }
+
+    const threshold = row.low_stock_threshold ?? 5;
+    if (row.stock_quantity <= threshold) {
+        return (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-900">
+                Low ({row.stock_quantity})
+            </span>
+        );
+    }
+
+    return (
+        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-800">
+            Stock {row.stock_quantity}
+        </span>
+    );
+}
+
 export default function ProductsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [payload, setPayload] = useState({ data: [], meta: null, links: null });
@@ -131,6 +160,7 @@ export default function ProductsPage() {
                     <span className={`rounded-full px-2 py-0.5 ${row.is_available ? 'bg-sky-100 text-sky-900' : 'bg-stone-200 text-stone-600'}`}>
                         {row.is_available ? 'Available' : 'Unavailable'}
                     </span>
+                    {stockBadge(row)}
                 </div>
             ),
         },

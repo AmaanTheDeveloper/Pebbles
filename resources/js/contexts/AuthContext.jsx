@@ -112,6 +112,7 @@ export function AuthProvider({ children }) {
             register,
             logout,
             isAuthenticated: Boolean(user),
+            isEmailVerified: Boolean(user?.email_verified_at),
             isUser: user?.role === 'user',
             isManager: user?.role === 'manager',
             isSuperAdmin: user?.role === 'super_admin',

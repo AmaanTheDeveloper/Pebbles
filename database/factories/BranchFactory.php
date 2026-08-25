@@ -28,6 +28,8 @@ class BranchFactory extends Factory
             'opens_at' => '11:00:00',
             'closes_at' => '23:00:00',
             'is_active' => true,
+            'preparation_minutes' => 20,
+            'delivery_minutes' => 30,
         ];
     }
 }

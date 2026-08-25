@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'pebbles.orderType';
 
-/** @typedef {'delivery' | 'takeaway'} OrderTypeChoice */
+/** @typedef {'delivery' | 'takeaway' | 'dine_in'} OrderTypeChoice */
 
 /**
  * @returns {OrderTypeChoice|null}
@@ -9,7 +9,7 @@ export function readOrderType() {
     try {
         const value = localStorage.getItem(STORAGE_KEY);
 
-        if (value === 'delivery' || value === 'takeaway') {
+        if (value === 'delivery' || value === 'takeaway' || value === 'dine_in') {
             return value;
         }
 
@@ -24,7 +24,7 @@ export function readOrderType() {
  */
 export function writeOrderType(type) {
     try {
-        if (type !== 'delivery' && type !== 'takeaway') {
+        if (type !== 'delivery' && type !== 'takeaway' && type !== 'dine_in') {
             localStorage.removeItem(STORAGE_KEY);
 
             return;

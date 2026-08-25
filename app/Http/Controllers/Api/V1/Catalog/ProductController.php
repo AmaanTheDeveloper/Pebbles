@@ -19,7 +19,7 @@ class ProductController extends Controller
             ->with([
                 'category',
                 'images',
-                'variants' => fn ($query) => $query->catalog()->with('image'),
+                'variants' => fn ($query) => $query->catalog(),
             ])
             ->when(
                 $request->filled('category'),

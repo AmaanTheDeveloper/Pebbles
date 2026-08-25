@@ -7,6 +7,7 @@ import { OrderTrackingStatusCard, OrderTrackingTimeline } from '../components/or
 import OrderTrackingEstimatePanel from '../components/orders/OrderTrackingEstimatePanel';
 import OrderTrackingSummary, { OrderTrackingSkeleton } from '../components/orders/OrderTrackingSummary';
 import OrderCustomerActions from '../components/orders/OrderCustomerActions';
+import DownloadOrderReceiptButton from '../components/orders/DownloadOrderReceiptButton';
 import FinalizedOrderNotice from '../components/orders/FinalizedOrderNotice';
 import { formatDate, humanizeStatus } from '../lib/format';
 import { formatFulfillmentType, formatRelativeUpdate, isFinalOrder, shouldAutoRefresh } from '../lib/orderTracking';
@@ -149,6 +150,11 @@ export default function OrderTrackingPage() {
                 </div>
 
                 <div className="flex flex-col items-stretch gap-2 sm:items-end">
+                    <DownloadOrderReceiptButton
+                        orderNumber={order.order_number}
+                        variant="secondary"
+                        label="Download Receipt"
+                    />
                     <Link
                         to={`/order/${order.order_number}`}
                         className="contact-secondary-btn justify-center text-center"

@@ -1,8 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
     addCartItem as addCartItemRequest,
+    applyCartCoupon as applyCartCouponRequest,
     clearCart as clearCartRequest,
     getCart,
+    removeCartCoupon as removeCartCouponRequest,
     removeCartItem as removeCartItemRequest,
     updateCartItem as updateCartItemRequest,
 } from '../api/cart';
@@ -16,6 +18,11 @@ const emptyCart = {
     items: [],
     item_count: 0,
     subtotal: '0.00',
+    discount_amount: '0.00',
+    offer_discount_amount: '0.00',
+    coupon_discount_amount: '0.00',
+    applied_coupon: null,
+    coupon_message: null,
     delivery_fee: '0.00',
     total: '0.00',
     branch_id: null,
@@ -28,18 +35,12 @@ export function CartProvider({ children }) {
     const [mutating, setMutating] = useState(false);
     const [error, setError] = useState(null);
 
-    const refreshCart = useCallback(async () => {
-        if (!isAuthenticated) {
-            setCart(emptyCart);
-            setError(null);
-            return null;
-        }
-
+    const refreshCart = useCallback(async (params = {}) => {
         setLoading(true);
         setError(null);
 
         try {
-            const next = await getCart();
+            const next = await getCart(params);
             setCart(next ?? emptyCart);
             return next;
         } catch (err) {
@@ -50,11 +51,11 @@ export function CartProvider({ children }) {
         } finally {
             setLoading(false);
         }
-    }, [isAuthenticated]);
+    }, []);
 
     useEffect(() => {
         refreshCart();
-    }, [refreshCart]);
+    }, [refreshCart, isAuthenticated]);
 
     const runMutation = useCallback(async (operation) => {
         setMutating(true);
@@ -101,6 +102,16 @@ export function CartProvider({ children }) {
         [runMutation],
     );
 
+    const applyCoupon = useCallback(
+        (payload) => runMutation(() => applyCartCouponRequest(payload)),
+        [runMutation],
+    );
+
+    const removeCoupon = useCallback(
+        () => runMutation(() => removeCartCouponRequest()),
+        [runMutation],
+    );
+
     const value = useMemo(
         () => ({
             cart,
@@ -113,9 +124,11 @@ export function CartProvider({ children }) {
             updateItem,
             removeItem,
             clear,
+            applyCoupon,
+            removeCoupon,
             clearError: () => setError(null),
         }),
-        [cart, loading, mutating, error, refreshCart, addItem, updateItem, removeItem, clear],
+        [cart, loading, mutating, error, refreshCart, addItem, updateItem, removeItem, clear, applyCoupon, removeCoupon],
     );
 
     return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

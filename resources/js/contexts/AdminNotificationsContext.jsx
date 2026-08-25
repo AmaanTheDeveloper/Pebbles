@@ -10,6 +10,9 @@ import { useAuth } from './AuthContext';
 
 const AdminNotificationsContext = createContext(null);
 
+const MIN_REFRESH_GAP_MS = 4000;
+const MAX_FAILURE_BACKOFF_MS = 60000;
+
 export function AdminNotificationsProvider({ children }) {
     const { isSuperadmin, isManager, initializing } = useAuth();
     const [unreadCount, setUnreadCount] = useState(0);
@@ -19,24 +22,37 @@ export function AdminNotificationsProvider({ children }) {
     const previousUnreadRef = useRef(null);
     const requestIdRef = useRef(0);
     const lastRefreshAtRef = useRef(0);
+    const consecutiveFailuresRef = useRef(0);
+    const nextAllowedAtRef = useRef(0);
     const canAccessAdmin = isSuperadmin || isManager;
 
     const refresh = useCallback(async ({ force = false } = {}) => {
         if (!canAccessAdmin) {
             setUnreadCount(0);
             setRecent([]);
+            consecutiveFailuresRef.current = 0;
+            nextAllowedAtRef.current = 0;
 
             return;
         }
 
         const now = Date.now();
 
-        if (!force && now - lastRefreshAtRef.current < 5000) {
-            return;
+        if (!force) {
+            if (now < nextAllowedAtRef.current) {
+                return;
+            }
+
+            if (now - lastRefreshAtRef.current < MIN_REFRESH_GAP_MS) {
+                return;
+            }
         }
 
         const requestId = ++requestIdRef.current;
-        setLoading(true);
+
+        if (force) {
+            setLoading(true);
+        }
 
         try {
             const [count, recentPayload] = await Promise.all([
@@ -49,6 +65,8 @@ export function AdminNotificationsProvider({ children }) {
             }
 
             lastRefreshAtRef.current = Date.now();
+            consecutiveFailuresRef.current = 0;
+            nextAllowedAtRef.current = 0;
 
             const nextCount = Number(count ?? 0);
             const previous = previousUnreadRef.current;
@@ -62,9 +80,15 @@ export function AdminNotificationsProvider({ children }) {
             setUnreadCount(nextCount);
             setRecent(recentPayload?.data ?? []);
         } catch {
-            // Keep navbar usable if polling fails.
+            // Keep navbar usable if polling fails; back off before the next silent poll.
+            consecutiveFailuresRef.current += 1;
+            const delay = Math.min(
+                MAX_FAILURE_BACKOFF_MS,
+                MIN_REFRESH_GAP_MS * 2 ** Math.min(consecutiveFailuresRef.current, 4),
+            );
+            nextAllowedAtRef.current = Date.now() + delay;
         } finally {
-            if (requestId === requestIdRef.current) {
+            if (force && requestId === requestIdRef.current) {
                 setLoading(false);
             }
         }
@@ -86,8 +110,8 @@ export function AdminNotificationsProvider({ children }) {
         },
         {
             enabled: canAccessAdmin && !initializing,
-            visibleMs: 20000,
-            hiddenMs: 45000,
+            visibleMs: 15000,
+            hiddenMs: 60000,
         },
     );
 

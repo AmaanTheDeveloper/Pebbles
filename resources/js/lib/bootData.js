@@ -1,7 +1,7 @@
 /**
  * Server-rendered boot payload from app.blade.php.
  *
- * @returns {{ appName: string, logoUrl: string | null } | null}
+ * @returns {{ appName: string, logoUrl: string | null, faviconUrl: string | null } | null}
  */
 export function readBootData() {
     if (typeof window === 'undefined') {
@@ -17,5 +17,7 @@ export function readBootData() {
     return {
         appName: typeof payload.appName === 'string' ? payload.appName : 'Pebbles',
         logoUrl: typeof payload.logoUrl === 'string' && payload.logoUrl !== '' ? payload.logoUrl : null,
+        faviconUrl:
+            typeof payload.faviconUrl === 'string' && payload.faviconUrl !== '' ? payload.faviconUrl : null,
     };
 }

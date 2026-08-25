@@ -33,6 +33,23 @@ export async function removeAdminLogo() {
     return response.data;
 }
 
+export async function uploadAdminFavicon(file) {
+    const formData = new FormData();
+    formData.append('favicon', file);
+
+    const response = await api.post('/api/v1/admin/settings/favicon', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    return response.data;
+}
+
+export async function removeAdminFavicon() {
+    const response = await api.delete('/api/v1/admin/settings/favicon');
+
+    return response.data;
+}
+
 export async function updateAdminPopupSettings(payload) {
     const response = await api.patch('/api/v1/admin/settings/popup', payload);
 

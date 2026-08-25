@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\StockStatus;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\ValidationException;
 
 class Product extends Model
 {
@@ -28,6 +30,8 @@ class Product extends Model
         'is_available',
         'is_featured',
         'sort_order',
+        'stock_quantity',
+        'low_stock_threshold',
     ];
 
     protected $attributes = [
@@ -35,6 +39,7 @@ class Product extends Model
         'is_available' => true,
         'is_featured' => false,
         'sort_order' => 0,
+        'low_stock_threshold' => 5,
     ];
 
     protected function casts(): array
@@ -45,7 +50,73 @@ class Product extends Model
             'is_available' => 'boolean',
             'is_featured' => 'boolean',
             'sort_order' => 'integer',
+            'stock_quantity' => 'integer',
+            'low_stock_threshold' => 'integer',
         ];
+    }
+
+    /**
+     * Null stock_quantity means unlimited inventory.
+     */
+    public function isInStock(): bool
+    {
+        return $this->stock_quantity === null || $this->stock_quantity > 0;
+    }
+
+    public function isLowStock(): bool
+    {
+        if ($this->stock_quantity === null || $this->stock_quantity <= 0) {
+            return false;
+        }
+
+        $threshold = $this->low_stock_threshold ?? 5;
+
+        return $this->stock_quantity <= $threshold;
+    }
+
+    /**
+     * Remaining sellable units, or null when stock is unlimited.
+     */
+    public function availableQuantity(): ?int
+    {
+        return $this->stock_quantity;
+    }
+
+    public function stockStatus(): StockStatus
+    {
+        if ($this->stock_quantity === null) {
+            return StockStatus::Unlimited;
+        }
+
+        if ($this->stock_quantity <= 0) {
+            return StockStatus::OutOfStock;
+        }
+
+        if ($this->isLowStock()) {
+            return StockStatus::LowStock;
+        }
+
+        return StockStatus::InStock;
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function assertSufficientStock(int $quantity, int $credit = 0): void
+    {
+        if ($this->stock_quantity === null) {
+            return;
+        }
+
+        $available = $this->stock_quantity + max(0, $credit);
+
+        if ($quantity > $available) {
+            throw ValidationException::withMessages([
+                'quantity' => $available <= 0
+                    ? "{$this->name} is out of stock."
+                    : "Only {$available} of {$this->name} left in stock.",
+            ]);
+        }
     }
 
     /**
@@ -115,6 +186,20 @@ class Product extends Model
         return $this->belongsToMany(AddOnGroup::class)
             ->withTimestamps()
             ->orderBy('sort_order');
+    }
+
+    /**
+     * Legacy direct add-on pivot (`add_on_product`).
+     *
+     * Availability is resolved via add-on → category (`add_on_category`) in
+     * ProductAddOnRules — keep this relation only for schema/backfill compatibility.
+     *
+     * @deprecated Use AddOn::categories() / ProductAddOnRules instead.
+     */
+    public function addOns(): BelongsToMany
+    {
+        return $this->belongsToMany(AddOn::class)
+            ->withTimestamps();
     }
 
     public function startingPrice(): string

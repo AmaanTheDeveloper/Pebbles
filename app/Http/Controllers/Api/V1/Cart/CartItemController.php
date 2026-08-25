@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Cart;
 use App\Actions\AddCartItem;
 use App\Actions\EnsureCustomerCart;
 use App\Actions\ResolveCartPricing;
+use App\Http\Controllers\Api\V1\Cart\Concerns\ResolvesCustomerCart;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Cart\StoreCartItemRequest;
 use App\Http\Requests\Cart\UpdateCartItemRequest;
@@ -14,20 +15,21 @@ use Illuminate\Http\Request;
 
 class CartItemController extends Controller
 {
+    use ResolvesCustomerCart;
+
     public function store(
         StoreCartItemRequest $request,
         EnsureCustomerCart $ensureCustomerCart,
         AddCartItem $addCartItem,
     ): CartResource {
-        $cart = $ensureCustomerCart->handle($request->user());
+        $user = $this->cartUser($request);
+        $cart = $ensureCustomerCart->handle($user, null, $this->guestTokenFor($request, $user));
 
-        $this->authorize('update', $cart);
+        $this->authorizeCustomerCart($request, $cart, $user, 'update');
 
         $addCartItem->handle($cart, $request->validated());
 
-        $cart->load(['items.product', 'items.variant', 'items.addOns.addOn']);
-
-        return new CartResource($cart->fresh(['items.product', 'items.variant', 'items.addOns.addOn']));
+        return new CartResource($cart->fresh(['items.product', 'items.variant', 'items.addOns.addOn', 'coupon']));
     }
 
     public function update(
@@ -38,20 +40,38 @@ class CartItemController extends Controller
         $item->load(['cart', 'addOns']);
 
         abort_unless($item->cart !== null, 404);
-        $this->authorize('update', $item->cart);
+
+        $user = $this->cartUser($request);
+
+        if ($user !== null) {
+            $this->authorize('update', $item->cart);
+        } else {
+            $this->authorizeGuestOwnedCart($request, $item->cart);
+        }
+
+        $quantity = (int) $request->validated('quantity');
 
         $resolveCartPricing->handle(
             $item->product_id,
             $item->product_variant_id,
             $item->addOns->pluck('add_on_id')->map(fn ($id) => (int) $id)->all(),
-            (int) $request->validated('quantity'),
+            $quantity,
         );
 
+        $item->loadMissing(['cart.items', 'product']);
+
+        $otherProductQuantity = $item->cart->items
+            ->where('product_id', $item->product_id)
+            ->reject(fn (CartItem $cartItem) => $cartItem->id === $item->id)
+            ->sum('quantity');
+
+        $item->product?->assertSufficientStock($otherProductQuantity + $quantity);
+
         $item->update([
-            'quantity' => (int) $request->validated('quantity'),
+            'quantity' => $quantity,
         ]);
 
-        $cart = $item->cart->fresh(['items.product', 'items.variant', 'items.addOns.addOn']);
+        $cart = $item->cart->fresh(['items.product', 'items.variant', 'items.addOns.addOn', 'coupon']);
 
         return new CartResource($cart);
     }
@@ -61,13 +81,20 @@ class CartItemController extends Controller
         $item->load('cart');
 
         abort_unless($item->cart !== null, 404);
-        $this->authorize('update', $item->cart);
+
+        $user = $this->cartUser($request);
+
+        if ($user !== null) {
+            $this->authorize('update', $item->cart);
+        } else {
+            $this->authorizeGuestOwnedCart($request, $item->cart);
+        }
 
         $cart = $item->cart;
 
         $item->addOns()->delete();
         $item->delete();
 
-        return new CartResource($cart->fresh(['items.product', 'items.variant', 'items.addOns.addOn']));
+        return new CartResource($cart->fresh(['items.product', 'items.variant', 'items.addOns.addOn', 'coupon']));
     }
 }

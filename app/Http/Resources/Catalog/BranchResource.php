@@ -41,6 +41,8 @@ class BranchResource extends JsonResource
             'opening_hours_schedule' => OpeningHours::formattedSchedule($hours),
             'is_open_now' => $this->isOpenNow($timezone),
             'display_order' => $this->display_order,
+            'preparation_minutes' => $this->preparation_minutes,
+            'delivery_minutes' => $this->delivery_minutes,
             'available' => $this->is_active,
         ];
     }

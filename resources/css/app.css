@@ -87,7 +87,7 @@
     color: var(--color-brand-ink);
 }
 
-/* ——— Page-load reveals ——— */
+/* ??? Page-load reveals ??? */
 .hp-reveal {
     animation: hp-fade-up 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -169,7 +169,7 @@
     pointer-events: none;
 }
 
-/* ——— Scroll reveal ——— */
+/* ??? Scroll reveal ??? */
 .hp-scroll {
     opacity: 0;
     transform: translateY(28px);
@@ -252,7 +252,7 @@
     }
 }
 
-/* ——— Premium orange CTA ——— */
+/* ??? Premium orange CTA ??? */
 .btn-orange {
     position: relative;
     display: inline-flex;
@@ -313,7 +313,7 @@
     transform: translateX(120%);
 }
 
-/* ——— Premium green CTA ——— */
+/* ??? Premium green CTA ??? */
 .btn-green {
     position: relative;
     display: inline-flex;
@@ -360,7 +360,7 @@
     transform: translateX(4px);
 }
 
-/* ——— Ghost / secondary ——— */
+/* ??? Ghost / secondary ??? */
 .btn-ghost-green {
     display: inline-flex;
     align-items: center;
@@ -436,7 +436,7 @@
     transform: translateX(5px);
 }
 
-/* ——— Nav underline ——— */
+/* ??? Nav underline ??? */
 .nav-link-premium {
     position: relative;
     display: inline-flex;
@@ -635,7 +635,7 @@
     background: linear-gradient(135deg, #176b3a, #f97316);
 }
 
-/* ——— Order success celebration ——— */
+/* ??? Order success celebration ??? */
 .order-success-badge {
     color: var(--color-brand-green);
     background:
@@ -780,7 +780,7 @@
     }
 }
 
-/* ——— Arrow text links ——— */
+/* ??? Arrow text links ??? */
 .link-arrow {
     display: inline-flex;
     align-items: center;
@@ -803,7 +803,7 @@
     transform: translateX(5px);
 }
 
-/* ——— Product card ——— */
+/* ??? Product card ??? */
 .product-card {
     position: relative;
     display: flex;
@@ -909,7 +909,7 @@
     transform: translateX(4px);
 }
 
-/* ——— Gallery tiles ——— */
+/* ??? Gallery tiles ??? */
 .gallery-tile {
     position: relative;
     display: block;
@@ -984,7 +984,7 @@
     opacity: 1;
 }
 
-/* ——— Gallery page ——— */
+/* ??? Gallery page ??? */
 .gallery-filter-chip {
     flex-shrink: 0;
     white-space: nowrap;
@@ -1209,7 +1209,7 @@
     }
 }
 
-/* ——— Menu book (restaurant menu pages) ——— */
+/* ??? Menu book (restaurant menu pages) ??? */
 .menu-book-page-trigger {
     position: relative;
     display: block;
@@ -1417,7 +1417,7 @@
     }
 }
 
-/* ——— Category chips ——— */
+/* ??? Category chips ??? */
 .cat-chip {
     white-space: nowrap;
     border-radius: 9999px;
@@ -1463,7 +1463,7 @@
     }
 }
 
-/* ——— Service / review / order cards ——— */
+/* ??? Service / review / order cards ??? */
 .lift-card {
     transition:
         transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
@@ -1612,7 +1612,7 @@
     box-shadow: 0 22px 40px -18px rgb(23 107 58 / 0.3);
 }
 
-/* ——— Dessert category cards ——— */
+/* ??? Dessert category cards ??? */
 .category-card {
     display: flex;
     flex-direction: column;
@@ -1739,7 +1739,7 @@
     color: #ea580c;
 }
 
-/* ——— Signature Shakes & Faluda showcase ——— */
+/* ??? Signature Shakes & Faluda showcase ??? */
 .signature-card {
     position: relative;
     display: flex;
@@ -3805,7 +3805,7 @@
     max-width: 140px;
 }
 
-/* Animated preparation heading — word-by-word reveal */
+/* Animated preparation heading ? word-by-word reveal */
 .preparation-heading-stack {
     display: grid;
 }
@@ -3951,13 +3951,13 @@
     }
 }
 
-/* Ice cream-making tracking illustration — premium preparation sequence */
+/* Ice cream-making tracking illustration ? premium preparation sequence */
 .ice-cream-making-svg {
     display: block;
     overflow: visible;
 }
 
-/* Shared loop duration — full story only while preparing */
+/* Shared loop duration ? full story only while preparing */
 .ice-cream-making.is-preparing .ice-cream-making-ambient,
 .ice-cream-making.is-preparing .ice-cream-making-shadow,
 .ice-cream-making.is-preparing .ice-cream-making-scene,
@@ -3981,7 +3981,7 @@
     animation-iteration-count: infinite;
 }
 
-/* Ambient particles — parallax-lite depth (preparing only) */
+/* Ambient particles ? parallax-lite depth (preparing only) */
 .ice-cream-making.is-preparing .ice-cream-making-particle-1 {
     animation: iceCreamParticleDrift1 6s ease-in-out infinite;
 }
@@ -4008,7 +4008,7 @@
     animation: iceCreamSceneFloat 6s ease-in-out infinite;
 }
 
-/* ── Waiting (pending) — static illustration, no active preparation ── */
+/* ?? Waiting (pending) ? static illustration, no active preparation ?? */
 .ice-cream-making.is-waiting .ice-cream-making-ambient {
     opacity: 0.65;
 }
@@ -4059,7 +4059,7 @@
     animation: iceCreamShadowGrow 6s ease-in-out infinite;
 }
 
-/* Piping mask — cream builds upward from cone */
+/* Piping mask ? cream builds upward from cone */
 .ice-cream-making.is-preparing .ice-cream-making-fill-mask {
     transform-origin: 90px 220px;
     animation: iceCreamFillMask 6s cubic-bezier(0.33, 1, 0.68, 1) infinite;
@@ -4116,7 +4116,7 @@
     animation: iceCreamDrizzleTail 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-/* Sprinkles — staggered fall + settle */
+/* Sprinkles ? staggered fall + settle */
 .ice-cream-making.is-preparing .ice-cream-making-sprinkle-1 {
     animation: iceCreamSprinkleFall1 6s cubic-bezier(0.34, 1.2, 0.64, 1) infinite;
 }
@@ -4147,7 +4147,7 @@
     animation: iceCreamShineSweep 6s ease-in-out infinite;
 }
 
-/* ── Complete (ready / out for delivery / delivered) ── */
+/* ?? Complete (ready / out for delivery / delivered) ?? */
 .ice-cream-making.is-complete .ice-cream-making-scene {
     animation: iceCreamSceneFloatComplete 5s ease-in-out infinite;
 }
@@ -4196,7 +4196,7 @@
     animation: iceCreamShineComplete 4s ease-in-out infinite;
 }
 
-/* ── Cancelled — neutral static ── */
+/* ?? Cancelled ? neutral static ?? */
 .ice-cream-making.is-cancelled .ice-cream-making-scene {
     animation: none;
     opacity: 0.5;
@@ -4218,7 +4218,7 @@
     animation: none;
 }
 
-/* ── Keyframes: 6s premium preparation story ── */
+/* ?? Keyframes: 6s premium preparation story ?? */
 
 @keyframes iceCreamAmbientPulse {
     0%,
@@ -4872,5 +4872,463 @@
 
     .ice-cream-making.is-cancelled .ice-cream-making-scene {
         filter: grayscale(0.4);
+    }
+}
+
+/* ??? Offline / 404 status experiences ??? */
+.status-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, rgb(46 139 87 / 0.16), transparent 55%),
+        radial-gradient(ellipse 70% 45% at 95% 5%, rgb(249 115 22 / 0.14), transparent 50%),
+        rgb(255 253 248 / 0.96);
+    backdrop-filter: blur(6px);
+}
+
+.status-page {
+    position: relative;
+    width: min(100%, 32rem);
+    margin-inline: auto;
+    padding: 1.5rem 0 2rem;
+}
+
+.status-page-glow {
+    pointer-events: none;
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(40px);
+}
+
+.status-page-glow-a {
+    top: 10%;
+    left: -8%;
+    width: 10rem;
+    height: 10rem;
+    background: rgb(46 139 87 / 0.18);
+}
+
+.status-page-glow-b {
+    right: -6%;
+    bottom: 18%;
+    width: 9rem;
+    height: 9rem;
+    background: rgb(249 115 22 / 0.16);
+}
+
+.status-page-card {
+    position: relative;
+    text-align: center;
+    border-radius: 1.5rem;
+    border: 1px solid rgb(23 107 58 / 0.12);
+    background: rgb(255 255 255 / 0.9);
+    padding: 2rem 1.5rem 1.75rem;
+    box-shadow: 0 18px 40px rgb(23 107 58 / 0.08);
+}
+
+.status-page-brand {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+}
+
+.status-page-eyebrow {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-brand-orange);
+}
+
+.status-illu {
+    margin: 0.75rem auto 0.25rem;
+    width: min(100%, 11rem);
+}
+
+.status-illu-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.status-illu-float {
+    transform-origin: 100px 150px;
+    animation: status-float 3.4s ease-in-out infinite;
+}
+
+.status-illu-drip-drop {
+    animation: status-drip 1.8s ease-in-out infinite;
+}
+
+.status-illu-wave {
+    opacity: 0.55;
+}
+
+.status-illu-wave-2 {
+    opacity: 0.35;
+    animation: status-pulse 2s ease-in-out infinite;
+}
+
+.status-illu-slash {
+    animation: status-pulse 1.6s ease-in-out infinite;
+}
+
+.status-page-title {
+    margin: 0.35rem 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 4vw, 1.95rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--color-brand-ink);
+}
+
+.status-page-copy {
+    margin: 0.75rem auto 0;
+    max-width: 26rem;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--color-brand-muted);
+}
+
+.status-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.status-page-btn {
+    min-height: 2.75rem;
+    min-width: 8.5rem;
+    padding-inline: 1.35rem;
+    text-decoration: none;
+}
+
+.status-page-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    min-width: 8.5rem;
+    padding: 0.7rem 1.25rem;
+    border-radius: 999px;
+    border: 1px solid rgb(23 107 58 / 0.22);
+    background: white;
+    color: var(--color-brand-green);
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.status-page-btn-secondary:hover {
+    background: rgb(46 139 87 / 0.06);
+    border-color: rgb(23 107 58 / 0.35);
+    transform: translateY(-1px);
+}
+
+.status-page-hint {
+    width: 100%;
+    margin: 0.15rem 0 0;
+    font-size: 0.85rem;
+    color: #b45309;
+}
+
+@keyframes status-float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+@keyframes status-drip {
+    0%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.85;
+    }
+    50% {
+        transform: translateY(6px);
+        opacity: 1;
+    }
+}
+
+@keyframes status-pulse {
+    0%,
+    100% {
+        opacity: 0.35;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .status-illu-float,
+    .status-illu-drip-drop,
+    .status-illu-wave-2,
+    .status-illu-slash,
+    .status-page-btn-secondary {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* --- Email verification reminder toast --- */
+.email-verify-toast {
+    position: fixed;
+    z-index: 10040;
+    top: calc(5.25rem + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(calc(100vw - 2rem), 26rem);
+    max-width: calc(100vw - 2rem);
+    pointer-events: none;
+}
+
+@media (min-width: 640px) {
+    .email-verify-toast {
+        top: calc(7.25rem + env(safe-area-inset-top, 0px));
+    }
+}
+
+@media (min-width: 768px) {
+    .email-verify-toast {
+        top: calc(7.75rem + env(safe-area-inset-top, 0px));
+    }
+}
+
+.email-verify-toast-card {
+    pointer-events: auto;
+    width: 100%;
+    border-radius: 1.25rem;
+    border: 1px solid rgb(251 191 36 / 0.45);
+    background: rgb(255 251 235 / 0.97);
+    box-shadow: 0 18px 40px rgb(120 53 15 / 0.12);
+    padding: 1rem 1rem 0.9rem;
+    backdrop-filter: blur(8px);
+    will-change: transform, opacity;
+}
+
+.email-verify-toast.is-entering .email-verify-toast-card {
+    animation: email-verify-toast-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.email-verify-toast.is-exiting .email-verify-toast-card {
+    animation: email-verify-toast-out 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.email-verify-toast-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.email-verify-toast-icon {
+    display: inline-flex;
+    height: 2.25rem;
+    width: 2.25rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgb(251 191 36 / 0.35);
+    color: #78350f;
+    font-size: 1rem;
+}
+
+.email-verify-toast-title {
+    margin: 0;
+    font-family: var(--font-display, Georgia, serif);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1c1917;
+}
+
+.email-verify-toast-copy {
+    margin: 0.35rem 0 0;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: #57534e;
+}
+
+.email-verify-toast-email {
+    margin: 0.45rem 0 0;
+    font-size: 0.8rem;
+    color: #78716c;
+    word-break: break-word;
+}
+
+.email-verify-toast-close {
+    flex-shrink: 0;
+    margin: -0.15rem -0.15rem 0 0;
+    height: 1.75rem;
+    width: 1.75rem;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: #78716c;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.email-verify-toast-close:hover,
+.email-verify-toast-close:focus-visible {
+    background: rgb(120 53 15 / 0.08);
+    color: #1c1917;
+    outline: none;
+}
+
+.email-verify-toast-close:active {
+    transform: scale(0.96);
+}
+
+.email-verify-toast-feedback {
+    margin: 0.75rem 0 0;
+    border-radius: 0.75rem;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.8rem;
+}
+
+.email-verify-toast-feedback.is-success {
+    background: rgb(236 253 245);
+    color: #065f46;
+    ring: 1px solid rgb(167 243 208);
+}
+
+.email-verify-toast-feedback.is-error {
+    background: rgb(254 242 242);
+    color: #991b1b;
+}
+
+.email-verify-toast-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.9rem;
+}
+
+.email-verify-toast-btn {
+    min-height: 2.5rem;
+    padding-inline: 1rem;
+    font-size: 0.85rem;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        opacity 0.2s ease,
+        filter 0.2s ease;
+}
+
+.email-verify-toast-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.email-verify-toast-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.email-verify-toast-btn:disabled {
+    transform: none;
+}
+
+.email-verify-toast-link {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #78350f;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.2s ease;
+}
+
+.email-verify-toast-link:hover,
+.email-verify-toast-link:focus-visible {
+    color: #1c1917;
+}
+
+.email-verify-toast-hint {
+    margin: 0.65rem 0 0;
+    font-size: 0.7rem;
+    color: #a8a29e;
+}
+
+@keyframes email-verify-toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes email-verify-toast-out {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.98);
+    }
+}
+
+@keyframes email-verify-toast-fade {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes email-verify-toast-fade-out {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .email-verify-toast.is-entering .email-verify-toast-card {
+        animation: email-verify-toast-fade 0.15s ease both;
+    }
+
+    .email-verify-toast.is-exiting .email-verify-toast-card {
+        animation: email-verify-toast-fade-out 0.12s ease forwards;
+    }
+
+    .email-verify-toast-btn,
+    .email-verify-toast-close,
+    .email-verify-toast-link {
+        transition: none;
+    }
+
+    .email-verify-toast-btn:hover:not(:disabled),
+    .email-verify-toast-btn:active:not(:disabled),
+    .email-verify-toast-close:active {
+        transform: none;
     }
 }

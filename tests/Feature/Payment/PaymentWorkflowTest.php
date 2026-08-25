@@ -186,7 +186,7 @@ test('superadmin can verify submitted payment without confirming pending order',
     PaymentProof::factory()->for($order->payment)->create();
 
     $this->actingAs($admin)
-        ->postJson('/api/v1/internal/orders/'.$order->public_order_number.'/payment/verify')
+        ->postJson('/api/v1/admin/orders/'.$order->public_order_number.'/payment/verify')
         ->assertSuccessful()
         ->assertJsonPath('data.payment.status', PaymentStatus::Verified->value)
         ->assertJsonPath('data.status', OrderStatus::Pending->value);
@@ -207,7 +207,7 @@ test('superadmin can reject submitted payment and customer may resubmit', functi
     PaymentProof::factory()->for($order->payment)->create();
 
     $this->actingAs($admin)
-        ->postJson('/api/v1/internal/orders/'.$order->public_order_number.'/payment/reject', [
+        ->postJson('/api/v1/admin/orders/'.$order->public_order_number.'/payment/reject', [
             'reason' => 'Unreadable receipt',
         ])
         ->assertSuccessful()
@@ -233,11 +233,11 @@ test('customer cannot verify or reject payments', function () {
     ]);
 
     $this->actingAs($customer)
-        ->postJson('/api/v1/internal/orders/'.$order->public_order_number.'/payment/verify')
+        ->postJson('/api/v1/admin/orders/'.$order->public_order_number.'/payment/verify')
         ->assertForbidden();
 
     $this->actingAs($customer)
-        ->postJson('/api/v1/internal/orders/'.$order->public_order_number.'/payment/reject')
+        ->postJson('/api/v1/admin/orders/'.$order->public_order_number.'/payment/reject')
         ->assertForbidden();
 });
 
@@ -266,11 +266,11 @@ test('verified payment cannot be verified or rejected again', function () {
     ]);
 
     $this->actingAs($admin)
-        ->postJson('/api/v1/internal/orders/'.$order->public_order_number.'/payment/verify')
+        ->postJson('/api/v1/admin/orders/'.$order->public_order_number.'/payment/verify')
         ->assertUnprocessable();
 
     $this->actingAs($admin)
-        ->postJson('/api/v1/internal/orders/'.$order->public_order_number.'/payment/reject')
+        ->postJson('/api/v1/admin/orders/'.$order->public_order_number.'/payment/reject')
         ->assertUnprocessable();
 });
 
@@ -283,7 +283,7 @@ test('cod pending payment can be verified by staff without confirming the order'
     ]);
 
     $this->actingAs($admin)
-        ->postJson('/api/v1/internal/orders/'.$order->public_order_number.'/payment/verify')
+        ->postJson('/api/v1/admin/orders/'.$order->public_order_number.'/payment/verify')
         ->assertSuccessful()
         ->assertJsonPath('data.payment.status', PaymentStatus::Verified->value)
         ->assertJsonPath('data.status', OrderStatus::Pending->value);

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { fetchCategories, fetchOffers, fetchProducts } from '../api/catalog';
 import { fetchGalleryItems } from '../api/gallery';
+import { appName } from '../api/config';
 import { activeSections, fetchHomepageContent, sectionSettings } from '../api/homepage';
 import ErrorState from '../components/storefront/ErrorState';
 import HomeFavorites from '../components/storefront/home/HomeFavorites';
@@ -17,6 +18,7 @@ import HomeReviews from '../components/storefront/home/HomeReviews';
 import HomeServices from '../components/storefront/home/HomeServices';
 import HomeWelcomePopup from '../components/storefront/HomeWelcomePopup';
 import HomePageSkeleton from '../components/storefront/HomePageSkeleton';
+import SeoHead from '../components/seo/SeoHead';
 import { useCatalogQuery } from '../hooks/useCatalog';
 import { filterByCategorySlug, resolveDessertPillars, resolveHomepageShowcaseCards } from '../lib/homeDessertCategories';
 
@@ -249,6 +251,18 @@ export default function HomePage() {
 
     return (
         <div>
+            <SeoHead
+                title={`${appName} — Ice Cream, Shakes, Faluda & Kulfi`}
+                description="Premium scoops, rich shakes, layered faluda, and creamy kulfi. Order takeaway or delivery from your nearest Pebbles branch."
+                path="/"
+                jsonLd={{
+                    '@context': 'https://schema.org',
+                    '@type': 'Restaurant',
+                    name: appName,
+                    servesCuisine: ['Ice Cream', 'Desserts', 'Beverages'],
+                    url: typeof window !== 'undefined' ? window.location.origin : undefined,
+                }}
+            />
             {sections.map((section) => renderSection(section))}
             <HomeWelcomePopup />
         </div>

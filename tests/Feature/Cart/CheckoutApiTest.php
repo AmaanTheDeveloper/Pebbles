@@ -199,7 +199,40 @@ test('dine-in requires table number', function () {
             'type' => OrderType::DineIn->value,
             'table_number' => '12',
         ])
-        ->assertSuccessful();
+        ->assertSuccessful()
+        ->assertJsonPath('data.fulfillment_type', OrderType::DineIn->value)
+        ->assertJsonPath('data.delivery_fee', '0.00');
+
+    expect(Order::query()->first()->table_number)->toBe('12');
+});
+
+test('dine-in checkout succeeds without delivery fee', function () {
+    $user = User::factory()->create();
+    [$branch] = seedBranchWithZone();
+    $product = makeCheckoutProduct(['base_price' => '500.00']);
+
+    $this->actingAs($user)->postJson('/api/v1/cart/items', [
+        'product_id' => $product->id,
+        'quantity' => 1,
+    ])->assertSuccessful();
+
+    $this->actingAs($user)
+        ->postJson('/api/v1/checkout', [
+            'branch_id' => $branch->id,
+            'type' => OrderType::DineIn->value,
+            'table_number' => '7',
+            'customer_notes' => 'Near the window',
+        ])
+        ->assertSuccessful()
+        ->assertJsonPath('data.fulfillment_type', OrderType::DineIn->value)
+        ->assertJsonPath('data.delivery_fee', '0.00')
+        ->assertJsonPath('data.total', '500.00');
+
+    $order = Order::query()->first();
+
+    expect($order->table_number)->toBe('7')
+        ->and($order->customer_notes)->toBe('Near the window')
+        ->and((float) $order->delivery_fee)->toBe(0.0);
 });
 
 test('inactive branch blocks checkout', function () {

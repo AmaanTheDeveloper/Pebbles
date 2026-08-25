@@ -20,7 +20,11 @@ test('pending order exposes cancel and modify but no estimated time countdown', 
     Setting::setValue('order_estimated_minutes', 30, 'integer');
 
     $user = User::factory()->create();
-    $branch = Branch::factory()->create(['is_active' => true]);
+    $branch = Branch::factory()->create([
+        'is_active' => true,
+        'preparation_minutes' => 0,
+        'delivery_minutes' => 0,
+    ]);
     $product = Product::factory()->create([
         'is_active' => true,
         'is_available' => true,
@@ -57,7 +61,11 @@ test('admin confirmation starts eta and closes customer changes immediately', fu
 
     $user = User::factory()->create();
     $admin = User::factory()->superAdmin()->create();
-    $branch = Branch::factory()->create(['is_active' => true]);
+    $branch = Branch::factory()->create([
+        'is_active' => true,
+        'preparation_minutes' => 0,
+        'delivery_minutes' => 0,
+    ]);
     $product = Product::factory()->create([
         'is_active' => true,
         'is_available' => true,
@@ -215,7 +223,7 @@ test('payment verification does not confirm pending order', function () {
     PaymentProof::factory()->for($payment)->create();
 
     $this->actingAs($admin)
-        ->postJson('/api/v1/internal/orders/'.$order->public_order_number.'/payment/verify')
+        ->postJson('/api/v1/admin/orders/'.$order->public_order_number.'/payment/verify')
         ->assertSuccessful()
         ->assertJsonPath('data.payment.status', PaymentStatus::Verified->value)
         ->assertJsonPath('data.status', OrderStatus::Pending->value);

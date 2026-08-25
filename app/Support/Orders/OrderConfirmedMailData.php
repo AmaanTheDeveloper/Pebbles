@@ -25,29 +25,47 @@ class OrderConfirmedMailData
         $branding = BrandingSettings::publicPayload();
         $payment = $order->payment;
         $branch = $order->branch;
-        $customerName = trim((string) ($order->user?->name ?? ''));
+        $user = $order->user;
+        $customerName = trim((string) ($user?->name ?? ''));
         $firstName = $customerName !== ''
             ? (explode(' ', $customerName)[0] ?? $customerName)
             : null;
+        $orderDate = $order->confirmed_at ?? $order->created_at;
 
         return [
             'app_name' => (string) config('app.name', 'Pebbles'),
             'preheader' => 'Your order has been confirmed and is now being prepared.',
             'logo_url' => $branding['logo']['url'] ?? null,
             'greeting_name' => $firstName ?: 'there',
+            'customer_name' => $customerName !== '' ? $customerName : null,
+            'customer_email' => $user?->email,
+            'customer_phone' => filled($user?->phone) ? (string) $user->phone : null,
             'order_number' => (string) $order->public_order_number,
+            'order_date' => $orderDate?->timezone(config('app.timezone'))->format('j F Y'),
             'status_label' => CustomerOrderLifecycle::customerStatusLabel($order),
             'branch_name' => $branch?->name,
             'branch_address' => $branch?->address,
             'order_type_label' => self::orderTypeLabel($order->type),
             'is_delivery' => $order->type === OrderType::Delivery,
             'is_takeaway' => $order->type === OrderType::Takeaway,
+            'is_dine_in' => $order->type === OrderType::DineIn,
             'delivery_address' => self::deliveryAddress($order),
+            'delivery_zone_name' => $order->type === OrderType::Delivery && filled($order->delivery_zone_name)
+                ? (string) $order->delivery_zone_name
+                : null,
+            'table_number' => $order->type === OrderType::DineIn && filled($order->table_number)
+                ? (string) $order->table_number
+                : null,
             'estimated_minutes' => $order->estimated_minutes,
             'items' => self::items($order),
             'subtotal' => self::money($order->subtotal),
             'discount_amount' => self::money($order->discount_amount),
             'has_discount' => (float) $order->discount_amount > 0,
+            'offer_discount_amount' => self::money(max(0, (float) $order->discount_amount - (float) $order->coupon_discount_amount)),
+            'has_offer_discount' => ((float) $order->discount_amount - (float) $order->coupon_discount_amount) > 0,
+            'coupon_code' => $order->coupon_code,
+            'coupon_discount_amount' => self::money($order->coupon_discount_amount),
+            'has_coupon' => filled($order->coupon_code) && (float) $order->coupon_discount_amount > 0,
             'delivery_fee' => self::money($order->delivery_fee),
             'has_delivery_fee' => (float) $order->delivery_fee > 0,
             'grand_total' => self::money($order->grand_total),
@@ -62,7 +80,13 @@ class OrderConfirmedMailData
     }
 
     /**
-     * @return list<array{name: string, quantity: int, line_total: string, add_ons: list<array{name: string, quantity: int}>}>
+     * @return list<array{
+     *     name: string,
+     *     quantity: int,
+     *     unit_price: string,
+     *     line_total: string,
+     *     add_ons: list<array{name: string, quantity: int, unit_price: string, line_total: string}>
+     * }>
      */
     private static function items(Order $order): array
     {
@@ -78,10 +102,13 @@ class OrderConfirmedMailData
             return [
                 'name' => $name,
                 'quantity' => (int) $item->quantity,
+                'unit_price' => self::money($item->unit_price),
                 'line_total' => self::money($item->line_total),
                 'add_ons' => $item->addOns->map(fn ($addOn): array => [
                     'name' => (string) $addOn->add_on_name,
                     'quantity' => (int) $addOn->quantity,
+                    'unit_price' => self::money($addOn->unit_price),
+                    'line_total' => self::money($addOn->line_total),
                 ])->values()->all(),
             ];
         })->values()->all();

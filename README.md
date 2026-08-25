@@ -259,8 +259,8 @@ COD: pending → verified (staff, without proof)
 | `POST` | `/api/v1/orders/{orderNumber}/payment` | Select/update method |
 | `POST` | `/api/v1/orders/{orderNumber}/payment/proof` | Multipart proof (`jpg/jpeg/png/webp/pdf`, max 5 MB) |
 | `GET` | `/api/v1/orders/{orderNumber}/payment/proof/{proof}` | Authorized private download |
-| `POST` | `/api/v1/internal/orders/{orderNumber}/payment/verify` | Superadmin only |
-| `POST` | `/api/v1/internal/orders/{orderNumber}/payment/reject` | Superadmin only |
+| `POST` | `/api/v1/admin/orders/{orderNumber}/payment/verify` | Super Admin + Manager (branch-scoped) |
+| `POST` | `/api/v1/admin/orders/{orderNumber}/payment/reject` | Super Admin + Manager (branch-scoped) |
 
 Legacy `GET /api/orders/{order}` remains for earlier tests.
 

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\OfferScope;
 use App\Enums\OfferType;
 use App\Models\Offer;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -22,6 +23,8 @@ class OfferFactory extends Factory
             'description' => fake()->paragraph(),
             'image_path' => null,
             'offer_value' => fake()->optional()->randomElement(['10% off', 'Rs 200 off', 'Buy 1 Get 1']),
+            'scope' => OfferScope::EntireStore,
+            'maximum_discount_amount' => null,
             'cta_label' => 'Order Now',
             'cta_url' => '/order',
             'starts_at' => null,
@@ -51,6 +54,27 @@ class OfferFactory extends Factory
         return $this->state(fn (): array => [
             'starts_at' => now()->addDay(),
             'ends_at' => now()->addDays(10),
+        ]);
+    }
+
+    public function entireStore(): static
+    {
+        return $this->state(fn (): array => [
+            'scope' => OfferScope::EntireStore,
+        ]);
+    }
+
+    public function forCategories(): static
+    {
+        return $this->state(fn (): array => [
+            'scope' => OfferScope::Categories,
+        ]);
+    }
+
+    public function forProducts(): static
+    {
+        return $this->state(fn (): array => [
+            'scope' => OfferScope::Products,
         ]);
     }
 }

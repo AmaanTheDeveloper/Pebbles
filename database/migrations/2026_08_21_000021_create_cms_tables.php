@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Deprecated: prefer Homepage CMS showcase/CTA over banners admin/API.
         Schema::create('banners', function (Blueprint $table) {
             $table->id();
             $table->string('title');

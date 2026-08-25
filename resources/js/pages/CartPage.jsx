@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import CartCouponPanel from '../components/cart/CartCouponPanel';
 import EmptyState from '../components/storefront/EmptyState';
 import ErrorState from '../components/storefront/ErrorState';
 import LoadingState from '../components/storefront/LoadingState';
@@ -135,12 +136,21 @@ export default function CartPage() {
                     <span>Subtotal</span>
                     <span>{formatMoney(cart.subtotal)}</span>
                 </div>
-                {Number(cart.discount_amount ?? 0) > 0 ? (
+                {Number(cart.offer_discount_amount ?? 0) > 0 ? (
                     <div className="mt-2 flex justify-between text-sm text-stone-600">
                         <span>{cart.discount_label ? `Discount (${cart.discount_label})` : 'Discount'}</span>
-                        <span>-{formatMoney(cart.discount_amount)}</span>
+                        <span>-{formatMoney(cart.offer_discount_amount)}</span>
                     </div>
                 ) : null}
+                {Number(cart.coupon_discount_amount ?? 0) > 0 && cart.applied_coupon ? (
+                    <div className="mt-2 flex justify-between text-sm text-stone-600">
+                        <span>Coupon - {cart.applied_coupon.code}</span>
+                        <span>-{formatMoney(cart.coupon_discount_amount)}</span>
+                    </div>
+                ) : null}
+                <div className="mt-3">
+                    <CartCouponPanel branchId={cart.branch_id} />
+                </div>
                 <div className="mt-2 flex justify-between text-base font-semibold text-stone-900">
                     <span>Total</span>
                     <span>{formatMoney(cart.total)}</span>

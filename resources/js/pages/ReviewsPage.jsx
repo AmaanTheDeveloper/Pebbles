@@ -7,6 +7,7 @@ import ReviewSubmissionSection from '../components/storefront/reviews/ReviewSubm
 import ReviewsGrid from '../components/storefront/reviews/ReviewsGrid';
 import ReviewsHero from '../components/storefront/reviews/ReviewsHero';
 import ReviewsSummary from '../components/storefront/reviews/ReviewsSummary';
+import SeoHead from '../components/seo/SeoHead';
 import { ScrollReveal } from '../hooks/useInView';
 
 export default function ReviewsPage() {
@@ -81,6 +82,11 @@ export default function ReviewsPage() {
     if (loading && !payload.data.length && !summary) {
         return (
             <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+                <SeoHead
+                    title="Reviews"
+                    description="Read what guests say about Pebbles ice cream, shakes, faluda, and kulfi — and share your own experience."
+                    path="/reviews"
+                />
                 <LoadingState label="Loading reviews…" />
             </div>
         );
@@ -89,6 +95,11 @@ export default function ReviewsPage() {
     if (error && !payload.data.length) {
         return (
             <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+                <SeoHead
+                    title="Reviews"
+                    description="Read what guests say about Pebbles ice cream, shakes, faluda, and kulfi — and share your own experience."
+                    path="/reviews"
+                />
                 <ErrorState message={error.message || 'Unable to load reviews.'} onRetry={() => load()} />
             </div>
         );
@@ -98,6 +109,11 @@ export default function ReviewsPage() {
 
     return (
         <div>
+            <SeoHead
+                title="Reviews"
+                description="Read what guests say about Pebbles ice cream, shakes, faluda, and kulfi — and share your own experience."
+                path="/reviews"
+            />
             <ReviewsHero />
 
             <div className="-mt-8 space-y-10 pb-8 sm:pb-12">

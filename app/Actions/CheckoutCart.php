@@ -11,6 +11,8 @@ use App\Models\Address;
 use App\Models\Branch;
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\Coupon;
+use App\Models\CouponRedemption;
 use App\Models\DeliveryZone;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -19,8 +21,9 @@ use App\Models\OrderStatusHistory;
 use App\Models\Payment;
 use App\Models\User;
 use App\Support\Money;
-use App\Support\OrderEstimateSettings;
+use App\Support\OrderEstimateResolver;
 use App\Support\PaymentMethodCatalog;
+use App\Support\ProductStock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -29,6 +32,7 @@ class CheckoutCart
     public function __construct(
         private ResolveCartPricing $resolveCartPricing,
         private ResolveOfferDiscount $resolveOfferDiscount,
+        private ResolveCouponDiscount $resolveCouponDiscount,
     ) {}
 
     /**
@@ -74,6 +78,7 @@ class CheckoutCart
 
             $pricedLines = [];
             $subtotal = 0.0;
+            $quantitiesByProductId = [];
 
             foreach ($cart->items as $item) {
                 $addOnIds = $item->addOns->pluck('add_on_id')->map(fn ($id) => (int) $id)->all();
@@ -91,7 +96,10 @@ class CheckoutCart
                 ];
 
                 $subtotal += (float) $priced['line_total'];
+                $quantitiesByProductId[$item->product_id] = ($quantitiesByProductId[$item->product_id] ?? 0) + $item->quantity;
             }
+
+            ProductStock::deduct($quantitiesByProductId);
 
             if ($type === OrderType::Delivery && $deliveryZone !== null) {
                 $minimum = (float) $deliveryZone->minimum_order_amount;
@@ -104,8 +112,42 @@ class CheckoutCart
             }
 
             $subtotalMoney = Money::of($subtotal);
-            $offerDiscount = $this->resolveOfferDiscount->handle($subtotal);
-            $discountAmount = $offerDiscount['discount_amount'];
+            $offerDiscount = $this->resolveOfferDiscount->handle(
+                $this->resolveOfferDiscount->linesFromPriced(array_column($pricedLines, 'priced'))
+            );
+            $offerDiscountAmount = $offerDiscount['discount_amount'];
+
+            $couponId = null;
+            $couponCode = null;
+            $couponDiscountAmount = Money::of(0);
+
+            if ($cart->coupon_id !== null) {
+                $coupon = Coupon::query()
+                    ->whereKey($cart->coupon_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($coupon === null) {
+                    throw ValidationException::withMessages([
+                        'coupon_code' => 'Invalid coupon code.',
+                    ]);
+                }
+
+                $resolvedCoupon = $this->resolveCouponDiscount->handle(
+                    $coupon,
+                    $user,
+                    $subtotal,
+                    $offerDiscountAmount,
+                    $branch->id,
+                    forCheckout: true,
+                );
+
+                $couponId = $resolvedCoupon['coupon_id'];
+                $couponCode = $resolvedCoupon['coupon_code'];
+                $couponDiscountAmount = $resolvedCoupon['discount_amount'];
+            }
+
+            $discountAmount = Money::add($offerDiscountAmount, $couponDiscountAmount);
             $discountedSubtotal = Money::subtract($subtotalMoney, $discountAmount);
             $grandTotal = Money::add($discountedSubtotal, $deliveryFee);
 
@@ -114,9 +156,12 @@ class CheckoutCart
                 'branch_id' => $branch->id,
                 'type' => $type,
                 'status' => OrderStatus::Pending,
-                'estimated_minutes' => OrderEstimateSettings::minutes(),
+                'estimated_minutes' => OrderEstimateResolver::minutesFor($branch, $type),
                 'subtotal' => $subtotalMoney,
                 'discount_amount' => $discountAmount,
+                'coupon_id' => $couponId,
+                'coupon_code' => $couponCode,
+                'coupon_discount_amount' => $couponDiscountAmount,
                 'delivery_fee' => $deliveryFee,
                 'tax_amount' => Money::of(0),
                 'grand_total' => $grandTotal,
@@ -133,6 +178,18 @@ class CheckoutCart
                 'table_number' => $type === OrderType::DineIn ? ($payload['table_number'] ?? null) : null,
                 'pickup_notes' => $type === OrderType::Takeaway ? ($payload['pickup_notes'] ?? null) : null,
             ]);
+
+            if ($couponId !== null) {
+                CouponRedemption::query()->create([
+                    'coupon_id' => $couponId,
+                    'user_id' => $user->id,
+                    'order_id' => $order->id,
+                    'discount_amount' => $couponDiscountAmount,
+                    'used_at' => now(),
+                ]);
+
+                Coupon::query()->whereKey($couponId)->increment('usage_count');
+            }
 
             foreach ($pricedLines as $line) {
                 /** @var CartItem $cartItem */
@@ -193,7 +250,10 @@ class CheckoutCart
                 $item->delete();
             });
 
-            $cart->update(['branch_id' => $branch->id]);
+            $cart->update([
+                'branch_id' => $branch->id,
+                'coupon_id' => null,
+            ]);
 
             $order = $order->fresh(['items.addOns', 'branch', 'payment']);
 

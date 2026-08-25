@@ -7,6 +7,7 @@ import GalleryHero from '../components/storefront/gallery/GalleryHero';
 import GalleryLightbox from '../components/storefront/gallery/GalleryLightbox';
 import ErrorState from '../components/storefront/ErrorState';
 import LoadingState from '../components/storefront/LoadingState';
+import SeoHead from '../components/seo/SeoHead';
 import { ScrollReveal } from '../hooks/useInView';
 import { useCatalogQuery } from '../hooks/useCatalog';
 import { filterGalleryItems } from '../lib/galleryContent';
@@ -50,6 +51,11 @@ export default function GalleryPage() {
     if (loading) {
         return (
             <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+                <SeoHead
+                    title="Gallery"
+                    description="Explore food, drinks, interior, and atmosphere — a curated look at the scoops and moments that make Pebbles special."
+                    path="/gallery"
+                />
                 <LoadingState label="Loading gallery…" />
             </div>
         );
@@ -58,6 +64,11 @@ export default function GalleryPage() {
     if (error) {
         return (
             <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+                <SeoHead
+                    title="Gallery"
+                    description="Explore food, drinks, interior, and atmosphere — a curated look at the scoops and moments that make Pebbles special."
+                    path="/gallery"
+                />
                 <ErrorState message={error.message} onRetry={reload} />
             </div>
         );
@@ -65,6 +76,11 @@ export default function GalleryPage() {
 
     return (
         <div>
+            <SeoHead
+                title="Gallery"
+                description="Explore food, drinks, interior, and atmosphere — a curated look at the scoops and moments that make Pebbles special."
+                path="/gallery"
+            />
             <GalleryHero />
 
             <section className="hp-section mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16" id="gallery-grid">

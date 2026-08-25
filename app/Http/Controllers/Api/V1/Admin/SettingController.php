@@ -216,4 +216,32 @@ class SettingController extends Controller
             'message' => 'Logo removed successfully.',
         ]);
     }
+
+    public function updateFavicon(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->isSuperAdmin(), 403);
+
+        $request->validate([
+            'favicon' => ['required', 'file', 'mimes:ico,png,jpg,jpeg,webp,svg', 'max:1024'],
+        ]);
+
+        BrandingSettings::storeFavicon($request->file('favicon'));
+
+        return response()->json([
+            'data' => BrandingSettings::adminPayload(),
+            'message' => 'Favicon updated successfully.',
+        ]);
+    }
+
+    public function destroyFavicon(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->isSuperAdmin(), 403);
+
+        BrandingSettings::removeFavicon();
+
+        return response()->json([
+            'data' => BrandingSettings::adminPayload(),
+            'message' => 'Favicon removed successfully.',
+        ]);
+    }
 }

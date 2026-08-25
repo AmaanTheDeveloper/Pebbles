@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { fetchAdminCategories } from '../../api/admin/categories';
 import { createAdminOffer, fetchAdminOffer, updateAdminOffer } from '../../api/admin/offers';
+import { fetchAdminProducts } from '../../api/admin/products';
 import FlashMessage from '../../components/admin/FlashMessage';
 import {
     AdminCheckboxField,
@@ -20,12 +22,22 @@ const typeOptions = [
     { value: 'seasonal_deals', label: 'Seasonal Deals' },
 ];
 
+const scopeOptions = [
+    { value: 'entire_store', label: 'Entire store' },
+    { value: 'categories', label: 'Selected categories' },
+    { value: 'products', label: 'Selected products' },
+];
+
 const emptyForm = {
     title: '',
     type: 'combo_offers',
     short_description: '',
     description: '',
     offer_value: '',
+    scope: 'entire_store',
+    maximum_discount_amount: '',
+    category_ids: [],
+    product_ids: [],
     cta_label: 'Order Now',
     cta_url: '/order',
     starts_at: '',
@@ -62,12 +74,91 @@ function toApiDate(value) {
     return date.toISOString();
 }
 
+function TargetPicker({ label, hint, options, selectedIds, onChange, loading, error, fieldError, emptyLabel }) {
+    const list = Array.isArray(options) ? options : [];
+    const selectedCount = selectedIds.length;
+
+    const toggle = (rawId) => {
+        const id = Number(rawId);
+        if (selectedIds.includes(id)) {
+            onChange(selectedIds.filter((value) => value !== id));
+            return;
+        }
+
+        onChange([...selectedIds, id]);
+    };
+
+    return (
+        <div className="space-y-3 sm:col-span-2">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                    <p className="text-sm font-medium text-stone-700">{label}</p>
+                    <p className="text-xs text-stone-500">
+                        {hint} {selectedCount} selected.
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() => onChange(list.map((item) => Number(item.id)))}
+                        disabled={loading || list.length === 0}
+                        className="rounded-md border border-stone-300 px-2.5 py-1 text-xs font-medium hover:bg-stone-50 disabled:opacity-50"
+                    >
+                        Select all
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => onChange([])}
+                        disabled={loading || selectedCount === 0}
+                        className="rounded-md border border-stone-300 px-2.5 py-1 text-xs font-medium hover:bg-stone-50 disabled:opacity-50"
+                    >
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            {loading ? <p className="text-sm text-stone-500">Loading…</p> : null}
+            {error && !loading ? <p className="text-sm text-red-600">{error}</p> : null}
+            {fieldError ? <p className="text-xs text-red-600">{fieldError}</p> : null}
+
+            <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-stone-200 bg-stone-50 p-3">
+                {loading ? null : error ? null : list.length === 0 ? (
+                    <p className="text-sm text-stone-500">{emptyLabel}</p>
+                ) : (
+                    list.map((item) => {
+                        const checked = selectedIds.includes(Number(item.id));
+
+                        return (
+                            <label
+                                key={item.id}
+                                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-white"
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggle(item.id)}
+                                    className="rounded border-stone-300 text-stone-900 focus:ring-stone-400"
+                                />
+                                <span className="font-medium text-stone-800">{item.name}</span>
+                            </label>
+                        );
+                    })
+                )}
+            </div>
+        </div>
+    );
+}
+
 export default function OfferFormPage() {
     const { id } = useParams();
     const isEdit = Boolean(id && id !== 'new');
     const navigate = useNavigate();
 
     const [form, setForm] = useState(emptyForm);
+    const [categories, setCategories] = useState([]);
+    const [products, setProducts] = useState([]);
+    const [targetsLoading, setTargetsLoading] = useState(true);
+    const [targetsError, setTargetsError] = useState(null);
     const [currentImageUrl, setCurrentImageUrl] = useState(null);
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
@@ -76,6 +167,28 @@ export default function OfferFormPage() {
     const [error, setError] = useState(null);
     const [fieldErrors, setFieldErrors] = useState({});
     const [flash, setFlash] = useState(null);
+
+    useEffect(() => {
+        const loadTargets = async () => {
+            setTargetsLoading(true);
+            setTargetsError(null);
+
+            try {
+                const [categoryResponse, productResponse] = await Promise.all([
+                    fetchAdminCategories(),
+                    fetchAdminProducts(),
+                ]);
+                setCategories(categoryResponse.data ?? []);
+                setProducts(productResponse.data ?? []);
+            } catch (err) {
+                setTargetsError(normalizeApiError(err).message);
+            } finally {
+                setTargetsLoading(false);
+            }
+        };
+
+        loadTargets();
+    }, []);
 
     useEffect(() => {
         if (!isEdit) {
@@ -94,6 +207,10 @@ export default function OfferFormPage() {
                     short_description: offer.short_description ?? '',
                     description: offer.description ?? '',
                     offer_value: offer.offer_value ?? '',
+                    scope: offer.scope ?? 'entire_store',
+                    maximum_discount_amount: offer.maximum_discount_amount ?? '',
+                    category_ids: (offer.category_ids ?? []).map(Number),
+                    product_ids: (offer.product_ids ?? []).map(Number),
                     cta_label: offer.cta_label ?? '',
                     cta_url: offer.cta_url ?? '',
                     starts_at: toDatetimeLocal(offer.starts_at),
@@ -163,12 +280,28 @@ export default function OfferFormPage() {
         formData.append('short_description', form.short_description || '');
         formData.append('description', form.description || '');
         formData.append('offer_value', form.offer_value || '');
+        formData.append('scope', form.scope);
+        formData.append('maximum_discount_amount', form.maximum_discount_amount === '' ? '' : String(form.maximum_discount_amount));
         formData.append('cta_label', form.cta_label || '');
         formData.append('cta_url', form.cta_url || '');
         formData.append('starts_at', toApiDate(form.starts_at));
         formData.append('ends_at', toApiDate(form.ends_at));
         formData.append('is_active', form.is_active ? '1' : '0');
         formData.append('sort_order', String(Number(form.sort_order) || 0));
+
+        form.category_ids.forEach((categoryId) => {
+            formData.append('category_ids[]', String(categoryId));
+        });
+        form.product_ids.forEach((productId) => {
+            formData.append('product_ids[]', String(productId));
+        });
+
+        if (form.scope === 'categories' && form.category_ids.length === 0) {
+            formData.append('category_ids', '');
+        }
+        if (form.scope === 'products' && form.product_ids.length === 0) {
+            formData.append('product_ids', '');
+        }
 
         if (imageFile) {
             formData.append('image', imageFile);
@@ -179,6 +312,13 @@ export default function OfferFormPage() {
                 const updated = await updateAdminOffer(id, formData);
                 setCurrentImageUrl(updated.image?.url ?? null);
                 clearSelectedImage();
+                setForm((current) => ({
+                    ...current,
+                    scope: updated.scope ?? current.scope,
+                    category_ids: (updated.category_ids ?? []).map(Number),
+                    product_ids: (updated.product_ids ?? []).map(Number),
+                    maximum_discount_amount: updated.maximum_discount_amount ?? '',
+                }));
                 setFlash({ type: 'success', message: 'Offer updated.' });
             } else {
                 const created = await createAdminOffer(formData);
@@ -245,6 +385,64 @@ export default function OfferFormPage() {
                             hint='Use formats like "10% off" or "Rs 100 off" so the discount auto-applies at checkout. Other text is display-only.'
                             errors={fieldErrors}
                         />
+                        <AdminFormField
+                            label="Maximum discount amount"
+                            name="maximum_discount_amount"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={form.maximum_discount_amount}
+                            onChange={(event) => updateField('maximum_discount_amount', event.target.value)}
+                            hint="Optional cap for percentage (or large fixed) discounts."
+                            errors={fieldErrors}
+                        />
+                        <fieldset className="space-y-2 sm:col-span-2">
+                            <legend className="text-sm font-medium text-stone-700">Applies to</legend>
+                            <div className="flex flex-wrap gap-4">
+                                {scopeOptions.map((option) => (
+                                    <label key={option.value} className="flex items-center gap-2 text-sm text-stone-800">
+                                        <input
+                                            type="radio"
+                                            name="scope"
+                                            value={option.value}
+                                            checked={form.scope === option.value}
+                                            onChange={(event) => updateField('scope', event.target.value)}
+                                            className="border-stone-300 text-stone-900 focus:ring-stone-400"
+                                        />
+                                        {option.label}
+                                    </label>
+                                ))}
+                            </div>
+                            {firstFieldError(fieldErrors, 'scope') ? (
+                                <p className="text-xs text-red-600">{firstFieldError(fieldErrors, 'scope')}</p>
+                            ) : null}
+                        </fieldset>
+                        {form.scope === 'categories' ? (
+                            <TargetPicker
+                                label="Categories"
+                                hint="Offer discount applies only to products in these categories."
+                                options={categories}
+                                selectedIds={form.category_ids}
+                                onChange={(categoryIds) => updateField('category_ids', categoryIds)}
+                                loading={targetsLoading}
+                                error={targetsError}
+                                fieldError={firstFieldError(fieldErrors, 'category_ids')}
+                                emptyLabel="No categories available."
+                            />
+                        ) : null}
+                        {form.scope === 'products' ? (
+                            <TargetPicker
+                                label="Products"
+                                hint="Offer discount applies only to these products."
+                                options={products}
+                                selectedIds={form.product_ids}
+                                onChange={(productIds) => updateField('product_ids', productIds)}
+                                loading={targetsLoading}
+                                error={targetsError}
+                                fieldError={firstFieldError(fieldErrors, 'product_ids')}
+                                emptyLabel="No products available."
+                            />
+                        ) : null}
                         <AdminFormField
                             label="CTA label"
                             name="cta_label"

@@ -8,6 +8,11 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Support\GuestCartCookie;
+
+beforeEach(function () {
+    $this->withHeader('Origin', 'http://localhost');
+});
 
 function makeOrderableProduct(array $attributes = []): Product
 {
@@ -20,9 +25,14 @@ function makeOrderableProduct(array $attributes = []): Product
     ], $attributes));
 }
 
-test('unauthenticated users cannot access the cart', function () {
-    $this->getJson('/api/v1/cart')->assertUnauthorized();
-    $this->postJson('/api/v1/cart/items', [])->assertUnauthorized();
+test('guests can access the cart', function () {
+    $this->getJson('/api/v1/cart')
+        ->assertSuccessful()
+        ->assertJsonPath('data.item_count', 0)
+        ->assertCookie(GuestCartCookie::NAME);
+
+    $this->postJson('/api/v1/cart/items', [])
+        ->assertUnprocessable();
 });
 
 test('authenticated user can fetch an empty cart', function () {
@@ -123,11 +133,11 @@ test('add-on from another product is rejected', function () {
         'slug' => 'ice-cream-premium-flavours',
         'is_active' => true,
     ]);
-    $shakeCategory = Category::factory()->create([
-        'slug' => 'ice-cream-shakes',
+    $limcaCategory = Category::factory()->create([
+        'slug' => 'limca-flavors',
         'is_active' => true,
     ]);
-    $productA = Product::factory()->for($shakeCategory)->create([
+    $productA = Product::factory()->for($limcaCategory)->create([
         'is_active' => true,
         'is_available' => true,
     ]);
@@ -143,7 +153,7 @@ test('add-on from another product is rejected', function () {
         'add_on_group_id' => $group->id,
         'is_active' => true,
     ]);
-    $productB->addOnGroups()->attach($group->id);
+    $foreignAddOn->categories()->sync([$iceCreamCategory->id]);
 
     $this->actingAs($user)
         ->postJson('/api/v1/cart/items', [

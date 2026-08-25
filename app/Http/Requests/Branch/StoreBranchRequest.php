@@ -34,6 +34,8 @@ class StoreBranchRequest extends FormRequest
             'opening_hours.*.closes' => ['nullable', 'date_format:H:i'],
             'opening_hours.*.note' => ['nullable', 'string', 'max:160'],
             'display_order' => ['sometimes', 'integer', 'min:0', 'max:9999'],
+            'preparation_minutes' => ['sometimes', 'integer', 'min:1', 'max:240'],
+            'delivery_minutes' => ['sometimes', 'integer', 'min:1', 'max:240'],
             'is_active' => ['sometimes', 'boolean'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
         ];

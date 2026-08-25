@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { fetchAdminSettings, removeAdminLogo, updateAdminSettings, uploadAdminLogo } from '../../api/admin/settings';
+import {
+    fetchAdminSettings,
+    removeAdminFavicon,
+    removeAdminLogo,
+    updateAdminSettings,
+    uploadAdminFavicon,
+    uploadAdminLogo,
+} from '../../api/admin/settings';
 import OpeningHoursEditor from '../../components/admin/OpeningHoursEditor';
 import FlashMessage from '../../components/admin/FlashMessage';
 import { AdminFormField } from '../../components/admin/AdminFormField';
@@ -45,6 +52,11 @@ export default function SettingsPage() {
     const [logoFile, setLogoFile] = useState(null);
     const [logoSaving, setLogoSaving] = useState(false);
     const [logoRemoving, setLogoRemoving] = useState(false);
+    const [favicon, setFavicon] = useState(null);
+    const [faviconPreview, setFaviconPreview] = useState(null);
+    const [faviconFile, setFaviconFile] = useState(null);
+    const [faviconSaving, setFaviconSaving] = useState(false);
+    const [faviconRemoving, setFaviconRemoving] = useState(false);
     const [popup, setPopup] = useState(null);
     const [payment, setPayment] = useState(null);
 
@@ -76,10 +88,13 @@ export default function SettingsPage() {
                 opening_hours: normalizeOpeningHours(settings.opening_hours),
             });
             setLogo(settings.logo ?? null);
+            setFavicon(settings.favicon ?? null);
             setPopup(settings.popup ?? null);
             setPayment(settings.payment ?? null);
             setLogoPreview(null);
             setLogoFile(null);
+            setFaviconPreview(null);
+            setFaviconFile(null);
         } catch (err) {
             setError(normalizeApiError(err));
         } finally {
@@ -181,6 +196,55 @@ export default function SettingsPage() {
         }
     };
 
+    const handleFaviconSelect = (event) => {
+        const file = event.target.files?.[0] ?? null;
+        setFaviconFile(file);
+        setFaviconPreview(file ? URL.createObjectURL(file) : null);
+    };
+
+    const handleFaviconSave = async () => {
+        if (!faviconFile) {
+            setFlash({ type: 'error', message: 'Select a favicon before saving.' });
+            return;
+        }
+
+        setFaviconSaving(true);
+        setFlash(null);
+
+        try {
+            const response = await uploadAdminFavicon(faviconFile);
+            setFavicon(response.data?.favicon ?? null);
+            setFaviconFile(null);
+            setFaviconPreview(null);
+            setFlash({ type: 'success', message: response.message || 'Favicon updated successfully.' });
+        } catch (err) {
+            setFlash({ type: 'error', message: normalizeApiError(err).message });
+        } finally {
+            setFaviconSaving(false);
+        }
+    };
+
+    const handleFaviconRemove = async () => {
+        if (!window.confirm('Remove the current website favicon?')) {
+            return;
+        }
+
+        setFaviconRemoving(true);
+        setFlash(null);
+
+        try {
+            const response = await removeAdminFavicon();
+            setFavicon(response.data?.favicon ?? null);
+            setFaviconFile(null);
+            setFaviconPreview(null);
+            setFlash({ type: 'success', message: response.message || 'Favicon removed successfully.' });
+        } catch (err) {
+            setFlash({ type: 'error', message: normalizeApiError(err).message });
+        } finally {
+            setFaviconRemoving(false);
+        }
+    };
+
     if (loading) {
         return <LoadingState label="Loading settings…" />;
     }
@@ -265,6 +329,79 @@ export default function SettingsPage() {
                                 className="rounded-md border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-60"
                             >
                                 {logoRemoving ? 'Removing…' : 'Remove logo'}
+                            </button>
+                        ) : null}
+                    </div>
+                </AdminPanelBody>
+            </AdminPanel>
+
+            <AdminPanel>
+                <AdminPanelBody className="space-y-5">
+                    <div>
+                        <h2 className="text-lg font-semibold text-stone-900">Favicon</h2>
+                        <p className="mt-1 text-sm text-stone-600">
+                            Upload a browser tab icon shown across the storefront.
+                        </p>
+                    </div>
+
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium text-stone-700">Current favicon</p>
+                            {favicon?.url ? (
+                                <img
+                                    src={favicon.url}
+                                    alt="Current website favicon"
+                                    className="size-12 rounded-lg border border-stone-200 bg-white object-contain p-2"
+                                />
+                            ) : (
+                                <div className="flex size-12 items-center justify-center rounded-lg border border-dashed border-stone-300 bg-stone-50 text-xs text-stone-500">
+                                    None
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium text-stone-700">New favicon preview</p>
+                            {faviconPreview ? (
+                                <img
+                                    src={faviconPreview}
+                                    alt="Selected favicon preview"
+                                    className="size-12 rounded-lg border border-stone-200 bg-white object-contain p-2"
+                                />
+                            ) : (
+                                <div className="flex size-12 items-center justify-center rounded-lg border border-dashed border-stone-300 bg-stone-50 text-xs text-stone-500">
+                                    —
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <AdminFormField
+                        label="Upload favicon"
+                        name="site_favicon"
+                        type="file"
+                        accept=".ico,image/png,image/jpeg,image/webp,image/svg+xml"
+                        onChange={handleFaviconSelect}
+                        hint="ICO, PNG, JPG, WebP, or SVG up to 1 MB."
+                    />
+
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={handleFaviconSave}
+                            disabled={faviconSaving || !faviconFile}
+                            className="rounded-md bg-stone-900 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-800 disabled:opacity-60"
+                        >
+                            {faviconSaving ? 'Saving…' : 'Save favicon'}
+                        </button>
+                        {favicon?.url ? (
+                            <button
+                                type="button"
+                                onClick={handleFaviconRemove}
+                                disabled={faviconRemoving}
+                                className="rounded-md border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-60"
+                            >
+                                {faviconRemoving ? 'Removing…' : 'Remove favicon'}
                             </button>
                         ) : null}
                     </div>

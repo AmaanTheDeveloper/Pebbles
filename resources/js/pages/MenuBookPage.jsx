@@ -6,6 +6,7 @@ import MenuBookLightbox from '../components/storefront/menuBook/MenuBookLightbox
 import EmptyState from '../components/storefront/EmptyState';
 import ErrorState from '../components/storefront/ErrorState';
 import LoadingState from '../components/storefront/LoadingState';
+import SeoHead from '../components/seo/SeoHead';
 import { ScrollReveal, ScrollRevealItem } from '../hooks/useInView';
 import { useCatalogQuery } from '../hooks/useCatalog';
 
@@ -21,6 +22,11 @@ export default function MenuBookPage() {
     if (loading) {
         return (
             <div>
+                <SeoHead
+                    title="Menu book"
+                    description="Browse the Pebbles restaurant menu book — full pages of ice cream, shakes, and desserts."
+                    path="/menu-book"
+                />
                 <MenuBookHero />
                 <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
                     <LoadingState label="Loading menu…" />
@@ -32,6 +38,11 @@ export default function MenuBookPage() {
     if (error) {
         return (
             <div>
+                <SeoHead
+                    title="Menu book"
+                    description="Browse the Pebbles restaurant menu book — full pages of ice cream, shakes, and desserts."
+                    path="/menu-book"
+                />
                 <MenuBookHero />
                 <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
                     <ErrorState message={error.message} onRetry={reload} />
@@ -42,6 +53,11 @@ export default function MenuBookPage() {
 
     return (
         <div>
+            <SeoHead
+                title="Menu book"
+                description="Browse the Pebbles restaurant menu book — full pages of ice cream, shakes, and desserts."
+                path="/menu-book"
+            />
             <MenuBookHero />
 
             <section className="hp-section mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">

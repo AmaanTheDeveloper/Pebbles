@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import AppImage from '../components/performance/AppImage';
 import { fetchProduct } from '../api/catalog';
 import AddOnList from '../components/storefront/AddOnList';
@@ -7,7 +7,7 @@ import EmptyState from '../components/storefront/EmptyState';
 import ErrorState from '../components/storefront/ErrorState';
 import LoadingState from '../components/storefront/LoadingState';
 import VariantSelector from '../components/storefront/VariantSelector';
-import { useAuth } from '../contexts/AuthContext';
+import SeoHead from '../components/seo/SeoHead';
 import { useCart } from '../contexts/CartContext';
 import { useCatalogQuery } from '../hooks/useCatalog';
 import { addOnSectionDescription, addOnSectionHeading } from '../lib/productAddOns';
@@ -15,8 +15,6 @@ import { flyProductToCart } from '../lib/cartAddAnimation';
 
 export default function ProductDetailPage() {
     const { slug } = useParams();
-    const navigate = useNavigate();
-    const { isAuthenticated } = useAuth();
     const { addItem, mutating, itemCount } = useCart();
     const { data: product, loading, error, reload } = useCatalogQuery(() => fetchProduct(slug), [slug]);
 
@@ -121,17 +119,16 @@ export default function ProductDetailPage() {
             return 'Quantity must be between 1 and 99.';
         }
 
+        if (product.stock_quantity != null && quantity > product.stock_quantity) {
+            return `Only ${product.stock_quantity} left in stock.`;
+        }
+
         return null;
     };
 
     const handleAddToCart = async () => {
         setActionError(null);
         setActionSuccess(null);
-
-        if (!isAuthenticated) {
-            navigate('/login', { state: { from: `/product/${slug}` } });
-            return;
-        }
 
         const validationMessage = validateSelections();
         if (validationMessage) {
@@ -188,12 +185,42 @@ export default function ProductDetailPage() {
     }
 
     const displayPrice = selectedVariant?.price ?? product.starting_price;
-    const configuredTotal = Number(displayPrice) + selectedAddOnTotal;
+    const hasPromo = !selectedVariant && product.promotional_price != null && product.compare_at_price != null;
+    const promoDisplayPrice = hasPromo ? product.promotional_price : displayPrice;
+    const configuredTotal = Number(promoDisplayPrice) + selectedAddOnTotal;
     const addOnHeading = addOnSectionHeading(product.category?.slug);
     const addOnDescription = addOnSectionDescription(product.category?.slug);
+    const seoDescription =
+        product.short_description ||
+        product.description ||
+        `Order ${product.name} from Pebbles — ice cream, shakes, faluda & kulfi.`;
+    const productJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.name,
+        description: seoDescription,
+        image: displayImage?.url ? [displayImage.url] : undefined,
+        offers: {
+            '@type': 'Offer',
+            priceCurrency: 'PKR',
+            price: String(promoDisplayPrice ?? product.starting_price ?? ''),
+            availability:
+                !product.available || product.stock_status === 'out_of_stock'
+                    ? 'https://schema.org/OutOfStock'
+                    : 'https://schema.org/InStock',
+        },
+    };
 
     return (
         <div className="space-y-6">
+            <SeoHead
+                title={product.name}
+                description={seoDescription}
+                path={`/product/${product.slug}`}
+                image={displayImage?.url}
+                type="product"
+                jsonLd={productJsonLd}
+            />
             <Link to="/menu" className="text-sm font-medium text-brand-green transition hover:text-brand-orange">
                 ← Back to menu
             </Link>
@@ -209,6 +236,8 @@ export default function ProductDetailPage() {
                             wrapperClassName="aspect-square w-full"
                             eager
                             highPriority
+                            width={800}
+                            height={800}
                         />
                     ) : (
                         <div className="flex aspect-square items-center justify-center text-brand-muted">No image</div>
@@ -222,7 +251,16 @@ export default function ProductDetailPage() {
                             {product.name}
                         </h1>
                         {!product.available ? (
-                            <p className="text-sm font-medium text-brand-muted">Currently unavailable</p>
+                            <p className="text-sm font-medium text-brand-muted">
+                                {product.stock_status === 'out_of_stock'
+                                    ? 'Out of stock'
+                                    : 'Currently unavailable'}
+                            </p>
+                        ) : product.stock_status === 'low_stock' ? (
+                            <p className="text-sm font-medium text-amber-800">
+                                Only a few left
+                                {product.stock_quantity != null ? ` (${product.stock_quantity})` : ''}
+                            </p>
                         ) : null}
                         {product.short_description ? (
                             <p className="text-brand-muted">{product.short_description}</p>
@@ -231,7 +269,16 @@ export default function ProductDetailPage() {
                             <p className="text-sm leading-relaxed text-brand-muted">{product.description}</p>
                         ) : null}
                         <p className="text-2xl font-bold text-brand-orange">
-                            Rs {Number(displayPrice).toLocaleString('en-PK')}
+                            {hasPromo ? (
+                                <>
+                                    <span className="mr-2 text-base font-medium text-brand-muted line-through">
+                                        Rs {Number(product.compare_at_price).toLocaleString('en-PK')}
+                                    </span>
+                                    Rs {Number(product.promotional_price).toLocaleString('en-PK')}
+                                </>
+                            ) : (
+                                <>Rs {Number(displayPrice).toLocaleString('en-PK')}</>
+                            )}
                         </p>
                         {selectedAddOnTotal > 0 ? (
                             <p className="text-sm text-brand-muted">
@@ -268,10 +315,15 @@ export default function ProductDetailPage() {
                         <input
                             type="number"
                             min={1}
-                            max={99}
+                            max={
+                                product.stock_quantity != null
+                                    ? Math.min(99, Math.max(1, product.stock_quantity))
+                                    : 99
+                            }
                             value={quantity}
                             onChange={(event) => setQuantity(Number(event.target.value))}
-                            className="w-20 rounded-lg border border-brand-green/20 px-2 py-1 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30"
+                            disabled={!product.available}
+                            className="w-20 rounded-lg border border-brand-green/20 px-2 py-1 focus:border-brand-orange focus:outline-none focus:ring-2 focus:ring-brand-orange/30 disabled:opacity-50"
                         />
                     </label>
 
@@ -292,8 +344,14 @@ export default function ProductDetailPage() {
                         onClick={handleAddToCart}
                         className="btn-orange btn-shine w-full px-4 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        {mutating ? 'Adding…' : 'Add to cart'}
-                        {!mutating ? (
+                        {mutating
+                            ? 'Adding…'
+                            : product.stock_status === 'out_of_stock'
+                              ? 'Out of stock'
+                              : !product.available
+                                ? 'Unavailable'
+                                : 'Add to cart'}
+                        {!mutating && product.available ? (
                             <span className="btn-arrow" aria-hidden="true">
                                 →
                             </span>

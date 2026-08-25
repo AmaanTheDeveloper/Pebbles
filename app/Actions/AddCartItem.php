@@ -21,24 +21,35 @@ class AddCartItem
         $addOnIds = array_values(array_map('intval', $payload['add_on_ids'] ?? []));
         sort($addOnIds);
 
+        $productId = (int) $payload['product_id'];
+        $variantId = isset($payload['product_variant_id']) ? (int) $payload['product_variant_id'] : null;
+        $addQuantity = (int) $payload['quantity'];
+
+        $cart->loadMissing(['items.addOns']);
+
+        $existing = $this->findMatchingItem($cart, $productId, $variantId, $addOnIds);
+        $intendedLineQuantity = $existing !== null
+            ? min(99, $existing->quantity + $addQuantity)
+            : $addQuantity;
+
+        $otherProductQuantity = $cart->items
+            ->where('product_id', $productId)
+            ->when($existing !== null, fn ($items) => $items->reject(fn (CartItem $item) => $item->id === $existing->id))
+            ->sum('quantity');
+
         $priced = $this->resolveCartPricing->handle(
-            (int) $payload['product_id'],
-            isset($payload['product_variant_id']) ? (int) $payload['product_variant_id'] : null,
+            $productId,
+            $variantId,
             $addOnIds,
-            (int) $payload['quantity'],
+            $intendedLineQuantity,
         );
 
-        return DB::transaction(function () use ($cart, $payload, $addOnIds, $priced): CartItem {
-            $existing = $this->findMatchingItem(
-                $cart,
-                (int) $payload['product_id'],
-                $priced['variant']?->id,
-                $addOnIds,
-            );
+        $priced['product']->assertSufficientStock($otherProductQuantity + $intendedLineQuantity);
 
+        return DB::transaction(function () use ($cart, $existing, $intendedLineQuantity, $priced): CartItem {
             if ($existing !== null) {
                 $existing->update([
-                    'quantity' => min(99, $existing->quantity + (int) $payload['quantity']),
+                    'quantity' => $intendedLineQuantity,
                 ]);
 
                 return $existing->fresh(['product', 'variant', 'addOns.addOn']);
@@ -47,7 +58,7 @@ class AddCartItem
             $item = $cart->items()->create([
                 'product_id' => $priced['product']->id,
                 'product_variant_id' => $priced['variant']?->id,
-                'quantity' => (int) $payload['quantity'],
+                'quantity' => $intendedLineQuantity,
             ]);
 
             foreach ($priced['add_ons'] as $addOn) {

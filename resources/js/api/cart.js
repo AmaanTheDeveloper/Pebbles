@@ -4,8 +4,8 @@ function unwrap(response) {
     return response.data?.data ?? response.data;
 }
 
-export async function getCart() {
-    const response = await api.get('/api/v1/cart');
+export async function getCart(params = {}) {
+    const response = await api.get('/api/v1/cart', { params });
 
     return unwrap(response);
 }
@@ -30,4 +30,16 @@ export async function removeCartItem(itemId) {
 
 export async function clearCart() {
     await api.delete('/api/v1/cart');
+}
+
+export async function applyCartCoupon(payload) {
+    const response = await api.post('/api/v1/cart/coupon', payload);
+
+    return unwrap(response);
+}
+
+export async function removeCartCoupon() {
+    const response = await api.delete('/api/v1/cart/coupon');
+
+    return unwrap(response);
 }

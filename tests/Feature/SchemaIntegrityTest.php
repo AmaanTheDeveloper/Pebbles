@@ -6,6 +6,15 @@ use Illuminate\Support\Facades\Schema;
 
 test('core domain tables exist', function () {
     foreach ([
+        'users',
+        'password_reset_tokens',
+        'sessions',
+        'cache',
+        'cache_locks',
+        'jobs',
+        'job_batches',
+        'failed_jobs',
+        'personal_access_tokens',
         'settings',
         'categories',
         'branches',
@@ -16,6 +25,8 @@ test('core domain tables exist', function () {
         'add_on_groups',
         'add_ons',
         'add_on_group_product',
+        'add_on_product',
+        'add_on_category',
         'addresses',
         'carts',
         'cart_items',
@@ -29,8 +40,21 @@ test('core domain tables exist', function () {
         'banners',
         'site_contents',
         'offers',
+        'offer_category',
+        'offer_product',
+        'coupons',
+        'coupon_redemptions',
+        'reviews',
+        'contact_messages',
+        'gallery_items',
+        'homepage_sections',
+        'homepage_features',
+        'homepage_cta_cards',
+        'homepage_showcase_items',
+        'menu_book_pages',
+        'admin_notifications',
     ] as $table) {
-        expect(Schema::hasTable($table))->toBeTrue();
+        expect(Schema::hasTable($table))->toBeTrue("Missing table: {$table}");
     }
 });
 
@@ -49,4 +73,11 @@ test('money columns on orders are decimal', function () {
         $type = strtolower((string) ($columns[$column]['type'] ?? $columns[$column]['type_name'] ?? ''));
         expect($type)->toMatch('/decimal|numeric/');
     }
+});
+
+test('add_on_category is the primary add-on targeting table while add_on_product remains for legacy', function () {
+    expect(Schema::hasTable('add_on_category'))->toBeTrue()
+        ->and(Schema::hasTable('add_on_product'))->toBeTrue()
+        ->and(Schema::hasColumns('add_on_category', ['add_on_id', 'category_id']))->toBeTrue()
+        ->and(Schema::hasColumns('add_on_product', ['add_on_id', 'product_id']))->toBeTrue();
 });

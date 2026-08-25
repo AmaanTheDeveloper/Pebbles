@@ -20,15 +20,42 @@ export default defineConfig({
                         return 'vendor';
                     }
 
-                    if (id.includes('/resources/js/pages/admin/')) {
-                        return 'admin-pages';
+                    // Keep admin route/page modules out of the customer entry graph.
+                    // Do not force them into a shared manual chunk — that caused main to
+                    // statically import the entire admin bundle.
+                    if (
+                        id.includes('/resources/js/pages/admin/')
+                        || id.includes('/resources/js/components/admin/')
+                        || id.includes('/resources/js/layouts/AdminLayout')
+                        || id.includes('/resources/js/routes/AdminRoutes')
+                        || id.includes('/resources/js/routes/lazyAdminPages')
+                        || id.includes('/resources/js/contexts/AdminNotificationsContext')
+                        || id.includes('/resources/js/api/admin/')
+                    ) {
+                        return null;
                     }
 
-                    if (id.includes('/resources/js/routes/lazyPages')) {
-                        return 'lazy-routes';
+                    if (
+                        id.includes('/resources/js/api/')
+                        || id.includes('/resources/js/lib/')
+                        || id.includes('/resources/js/hooks/')
+                        || id.includes('/resources/js/contexts/')
+                        || id.includes('/resources/js/routes/lazyPage.js')
+                        || id.includes('/resources/js/components/storefront/')
+                        || id.includes('/resources/js/components/orders/')
+                        || id.includes('/resources/js/components/account/')
+                        || id.includes('/resources/js/components/performance/')
+                        || id.includes('/resources/js/layouts/StorefrontLayout')
+                    ) {
+                        return 'app-shared';
                     }
                 },
             },
+        },
+        // Production safety: strip accidental debug leftover without changing behavior.
+        esbuild: {
+            drop: ['debugger'],
+            pure: ['console.log', 'console.debug', 'console.table', 'console.info'],
         },
     },
     server: {

@@ -15,9 +15,22 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * Admin analytics aggregations over orders / payments / line items.
+ *
+ * Heavy endpoints (prefer narrow date ranges in production):
+ * - overview: dual-period KPI bundles + status distributions
+ * - customers: distinct user_id scans + first-order cohort intersect
+ * - products: full order_items rollups (products / variants / categories / add-ons)
+ * - exportCsv: streamed chunks; still expensive for wide date ranges
+ *
+ * Metric formulas must stay stable — optimize with indexes / eager loads only.
+ */
 class AnalyticsService
 {
     /**
+     * Dual-period KPIs — runs two full order + payment aggregate passes.
+     *
      * @return array<string, mixed>
      */
     public function overview(AnalyticsFilters $filters): array
@@ -95,6 +108,8 @@ class AnalyticsService
     }
 
     /**
+     * Full merchandise rollups across order_items (and add-ons) — heavy for large catalogs/history.
+     *
      * @return array<string, mixed>
      */
     public function products(AnalyticsFilters $filters): array
@@ -166,6 +181,8 @@ class AnalyticsService
     }
 
     /**
+     * Customer cohorts — plucks distinct user ids for the period; keep filters narrow.
+     *
      * @return array<string, mixed>
      */
     public function customers(AnalyticsFilters $filters): array
@@ -341,6 +358,9 @@ class AnalyticsService
         ];
     }
 
+    /**
+     * Streamed CSV export — uses eager-loaded relations for order rows; still heavy for wide ranges.
+     */
     public function exportCsv(AnalyticsFilters $filters): StreamedResponse
     {
         $report = $filters->report;

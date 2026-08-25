@@ -8,6 +8,12 @@ use App\Services\Admin\AnalyticsService;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * Admin analytics HTTP surface.
+ *
+ * Heavy reports: overview (dual-period KPIs), customers (cohort scans),
+ * products (order_items rollups), and export (streamed CSV). Prefer narrow date filters.
+ */
 class AnalyticsController extends Controller
 {
     public function __construct(

@@ -3,6 +3,7 @@ import { fetchOffers } from '../api/catalog';
 import EmptyState from '../components/storefront/EmptyState';
 import ErrorState from '../components/storefront/ErrorState';
 import LoadingState from '../components/storefront/LoadingState';
+import SeoHead from '../components/seo/SeoHead';
 import { useCatalogQuery } from '../hooks/useCatalog';
 
 const TYPE_SECTIONS = [
@@ -72,6 +73,7 @@ function OfferCard({ offer }) {
                     alt=""
                     className="aspect-[16/10] w-full object-cover"
                     loading="lazy"
+                    decoding="async"
                 />
             ) : (
                 <div className="flex aspect-[16/10] items-center justify-center bg-gradient-to-br from-brand-green to-brand-green-light text-white">
@@ -130,6 +132,11 @@ export default function OffersPage() {
 
     return (
         <div className="space-y-8 py-2 sm:py-4">
+            <SeoHead
+                title="Offers"
+                description="Combos, discounts, and seasonal deals on shakes, ice cream, and more — current offers from Pebbles."
+                path="/offers"
+            />
             <div className="space-y-2">
                 <p className="text-xs font-semibold tracking-widest text-brand-orange uppercase">Offers</p>
                 <h1 className="font-display text-3xl font-semibold tracking-tight text-brand-ink sm:text-4xl">

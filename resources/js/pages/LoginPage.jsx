@@ -3,13 +3,16 @@ import { Link, Navigate, useLocation, useNavigate, useOutletContext } from 'reac
 import SiteLogo from '../components/storefront/SiteLogo';
 import ErrorState from '../components/storefront/ErrorState';
 import LoadingState from '../components/storefront/LoadingState';
+import SeoHead from '../components/seo/SeoHead';
 import { useAuth } from '../contexts/AuthContext';
+import { useEmailVerificationReminder } from '../contexts/EmailVerificationReminderContext';
 import { firstFieldError } from '../lib/errors';
 import { postLoginPath } from '../lib/roles';
 
 export default function LoginPage() {
     const { logo } = useOutletContext() ?? {};
     const { login, loading, error, clearError, isAuthenticated, initializing, user } = useAuth();
+    const { showReminder } = useEmailVerificationReminder();
     const navigate = useNavigate();
     const location = useLocation();
     const [email, setEmail] = useState('');
@@ -37,6 +40,7 @@ export default function LoginPage() {
 
         try {
             const nextUser = await login({ email, password });
+            showReminder(nextUser, { reason: 'login' });
             const from = location.state?.from;
 
             if (from) {
@@ -53,6 +57,11 @@ export default function LoginPage() {
 
     return (
         <div className="mx-auto max-w-md space-y-6">
+            <SeoHead
+                title="Sign in"
+                description="Sign in to your Pebbles account to manage your cart, checkout, and orders."
+                path="/login"
+            />
             <div className="space-y-2 text-center">
                 <SiteLogo logo={logo} variant="auth" linkTo="/" />
                 <h1 className="text-2xl font-semibold text-stone-900">Sign in to continue</h1>
@@ -96,6 +105,12 @@ export default function LoginPage() {
                     {loading ? 'Signing in…' : 'Sign in'}
                 </button>
             </form>
+
+            <p className="text-center text-sm text-stone-600">
+                <Link to="/forgot-password" className="font-medium text-amber-900 hover:underline">
+                    Forgot password?
+                </Link>
+            </p>
 
             <p className="text-center text-sm text-stone-600">
                 Don&apos;t have an account?{' '}

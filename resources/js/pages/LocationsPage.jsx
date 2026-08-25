@@ -6,6 +6,7 @@ import LoadingState from '../components/storefront/LoadingState';
 import LocationCard from '../components/storefront/locations/LocationCard';
 import LocationsHero from '../components/storefront/locations/LocationsHero';
 import LocationsMap from '../components/storefront/locations/LocationsMap';
+import SeoHead from '../components/seo/SeoHead';
 import { ScrollReveal, ScrollRevealItem } from '../hooks/useInView';
 
 export default function LocationsPage() {
@@ -33,15 +34,32 @@ export default function LocationsPage() {
 
     useEffect(() => {
         load();
-        document.title = 'Locations — Pebbles';
     }, []);
 
     if (loading) {
-        return <LoadingState label="Loading locations…" />;
+        return (
+            <>
+                <SeoHead
+                    title="Locations"
+                    description="Find your nearest Pebbles branch — addresses, hours, directions, and maps."
+                    path="/locations"
+                />
+                <LoadingState label="Loading locations…" />
+            </>
+        );
     }
 
     if (error) {
-        return <ErrorState message={error.message || 'Unable to load locations.'} onRetry={load} />;
+        return (
+            <>
+                <SeoHead
+                    title="Locations"
+                    description="Find your nearest Pebbles branch — addresses, hours, directions, and maps."
+                    path="/locations"
+                />
+                <ErrorState message={error.message || 'Unable to load locations.'} onRetry={load} />
+            </>
+        );
     }
 
     if (!contact?.show_locations_page) {
@@ -57,6 +75,11 @@ export default function LocationsPage() {
 
     return (
         <>
+            <SeoHead
+                title="Locations"
+                description="Find your nearest Pebbles branch — addresses, hours, directions, and maps."
+                path="/locations"
+            />
             <LocationsHero />
 
             <section className="hp-section mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">

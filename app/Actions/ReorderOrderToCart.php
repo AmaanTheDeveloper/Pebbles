@@ -157,5 +157,7 @@ class ReorderOrderToCart
             $item->addOns()->delete();
             $item->delete();
         }
+
+        $cart->update(['coupon_id' => null]);
     }
 }

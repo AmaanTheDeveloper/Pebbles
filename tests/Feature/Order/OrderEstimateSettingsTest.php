@@ -46,7 +46,11 @@ test('checkout snapshots configured estimated minutes on the order', function ()
     Setting::setValue('order_estimated_minutes', 20, 'integer');
 
     $user = User::factory()->create();
-    $branch = Branch::factory()->create(['is_active' => true]);
+    $branch = Branch::factory()->create([
+        'is_active' => true,
+        'preparation_minutes' => 0,
+        'delivery_minutes' => 0,
+    ]);
     $product = Product::factory()->create([
         'is_active' => true,
         'is_available' => true,
@@ -75,7 +79,11 @@ test('checkout snapshots configured estimated minutes on the order', function ()
 
 test('customer order detail exposes snapshotted estimated minutes after confirmation', function () {
     $user = User::factory()->create();
-    $branch = Branch::factory()->create(['is_active' => true]);
+    $branch = Branch::factory()->create([
+        'is_active' => true,
+        'preparation_minutes' => 0,
+        'delivery_minutes' => 0,
+    ]);
     $product = Product::factory()->create([
         'is_active' => true,
         'is_available' => true,
@@ -136,7 +144,11 @@ test('estimated time deadline remains stable after admin changes global setting'
 
     $user = User::factory()->create();
     $admin = User::factory()->superAdmin()->create();
-    $branch = Branch::factory()->create(['is_active' => true]);
+    $branch = Branch::factory()->create([
+        'is_active' => true,
+        'preparation_minutes' => 0,
+        'delivery_minutes' => 0,
+    ]);
     $product = Product::factory()->create([
         'is_active' => true,
         'is_available' => true,

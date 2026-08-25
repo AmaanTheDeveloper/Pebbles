@@ -22,7 +22,19 @@ class SendOrderConfirmedEmail implements ShouldQueue
     public function handle(OrderConfirmed $event): void
     {
         $order = $event->order->loadMissing(['user']);
-        $recipient = $order->user?->email;
+        $user = $order->user;
+        $recipient = $user?->email;
+
+        if ($user === null || ! $user->hasVerifiedEmail()) {
+            logger()->info('Skipped order confirmation email: customer email is not verified.', [
+                'email_type' => CustomerEmailType::OrderConfirmed->value,
+                'order_id' => $order->id,
+                'order_number' => $order->public_order_number,
+                'user_id' => $user?->id,
+            ]);
+
+            return;
+        }
 
         if (! is_string($recipient) || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             logger()->warning('Skipped order confirmation email: missing or invalid recipient.', [

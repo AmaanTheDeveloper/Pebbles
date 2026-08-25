@@ -8,7 +8,19 @@ class VerifyPaymentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isSuperAdmin() ?? false;
+        $user = $this->user();
+
+        if ($user === null || ! $user->canAccessAdmin()) {
+            return false;
+        }
+
+        $order = $this->route('order');
+
+        if ($order === null || $order->payment === null) {
+            return false;
+        }
+
+        return $user->can('verify', $order->payment);
     }
 
     /**

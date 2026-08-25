@@ -49,6 +49,8 @@ class CustomerOrderResource extends JsonResource
             'created_at' => $this->created_at,
             'subtotal' => $this->subtotal,
             'discount_amount' => $this->discount_amount,
+            'coupon_code' => $this->coupon_code,
+            'coupon_discount_amount' => $this->coupon_discount_amount,
             'delivery_fee' => $this->delivery_fee,
             'tax_amount' => $this->tax_amount,
             'total' => $this->grand_total,

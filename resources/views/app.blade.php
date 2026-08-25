@@ -3,12 +3,24 @@
     @php
         $bootBranding = \App\Support\BrandingSettings::publicPayload();
         $bootLogoUrl = $bootBranding['logo']['url'] ?? null;
+        $bootFaviconUrl = $bootBranding['favicon']['url'] ?? null;
         $bootAppName = config('app.name', 'Pebbles');
+        $bootPayload = [
+            'appName' => $bootAppName,
+            'logoUrl' => $bootLogoUrl,
+            'faviconUrl' => $bootFaviconUrl,
+        ];
     @endphp
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{{ $bootAppName }}</title>
+        <title>{{ ($httpStatus ?? 200) === 404 ? 'Page not found · '.$bootAppName : $bootAppName }}</title>
+        @if (($httpStatus ?? 200) === 404)
+            <meta name="robots" content="noindex, nofollow">
+        @endif
+        @if ($bootFaviconUrl)
+            <link rel="icon" href="{{ $bootFaviconUrl }}">
+        @endif
         @if ($bootLogoUrl)
             <link rel="preload" as="image" href="{{ $bootLogoUrl }}">
         @endif
@@ -18,10 +30,7 @@
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/main.jsx'])
         <script>
-            window.__PEBBLES_BOOT__ = @json([
-                'appName' => $bootAppName,
-                'logoUrl' => $bootLogoUrl,
-            ]);
+            window.__PEBBLES_BOOT__ = @json($bootPayload);
         </script>
     </head>
     <body class="antialiased" style="background-color: #fffdf8;">

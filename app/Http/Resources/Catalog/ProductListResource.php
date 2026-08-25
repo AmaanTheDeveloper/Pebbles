@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Catalog;
 
 use App\Models\Product;
+use App\Support\ProductOfferPricing;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,13 +17,18 @@ class ProductListResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $promo = app(ProductOfferPricing::class)->forProduct($this->resource);
+
         return [
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
             'short_description' => $this->short_description,
             'starting_price' => $this->startingPrice(),
-            'available' => $this->is_available,
+            'compare_at_price' => $promo['compare_at_price'] ?? null,
+            'promotional_price' => $promo['promotional_price'] ?? null,
+            'available' => $this->is_available && $this->isInStock(),
+            'stock_status' => $this->stockStatus()->value,
             'is_featured' => $this->is_featured,
             'image' => $this->whenLoaded('images', function () {
                 $primaryImage = $this->images->firstWhere('is_primary', true) ?? $this->images->first();

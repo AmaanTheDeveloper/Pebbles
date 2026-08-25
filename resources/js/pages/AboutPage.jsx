@@ -1,3 +1,4 @@
+import { fetchAboutContent } from '../api/about';
 import { fetchCategories, fetchProducts } from '../api/catalog';
 import AboutAmbience from '../components/storefront/about/AboutAmbience';
 import AboutBrandStatement from '../components/storefront/about/AboutBrandStatement';
@@ -10,7 +11,9 @@ import AboutTeam from '../components/storefront/about/AboutTeam';
 import AboutValues from '../components/storefront/about/AboutValues';
 import ErrorState from '../components/storefront/ErrorState';
 import LoadingState from '../components/storefront/LoadingState';
+import SeoHead from '../components/seo/SeoHead';
 import { useCatalogQuery } from '../hooks/useCatalog';
+import { resolveAboutContent } from '../lib/aboutContent';
 import { resolveDessertPillars } from '../lib/homeDessertCategories';
 
 function resolveAboutSpecialties(categories = [], products = []) {
@@ -53,6 +56,13 @@ function pickImage(...candidates) {
 
 export default function AboutPage() {
     const {
+        data: aboutPayload,
+        loading: aboutLoading,
+        error: aboutError,
+        reload: reloadAbout,
+    } = useCatalogQuery(fetchAboutContent, []);
+
+    const {
         data: categories,
         loading: categoriesLoading,
         error: categoriesError,
@@ -73,8 +83,8 @@ export default function AboutPage() {
         reload: reloadProducts,
     } = useCatalogQuery(() => fetchProducts(), []);
 
-    const loading = categoriesLoading || featuredLoading || productsLoading;
-    const error = categoriesError || featuredError || productsError;
+    const loading = aboutLoading || categoriesLoading || featuredLoading || productsLoading;
+    const error = aboutError || categoriesError || featuredError || productsError;
 
     if (loading) {
         return (
@@ -90,6 +100,7 @@ export default function AboutPage() {
                 <ErrorState
                     message={error.message}
                     onRetry={() => {
+                        reloadAbout();
                         reloadCategories();
                         reloadFeatured();
                         reloadProducts();
@@ -99,6 +110,7 @@ export default function AboutPage() {
         );
     }
 
+    const about = resolveAboutContent(aboutPayload);
     const categoryList = categories ?? [];
     const productList = products ?? [];
     const featuredList = featured ?? [];
@@ -135,19 +147,25 @@ export default function AboutPage() {
 
     return (
         <div>
-            <AboutHero imageUrl={heroImage.url} imageAlt={heroImage.alt} />
-            <AboutStory imageUrl={storyImage.url} imageAlt={storyImage.alt} />
-            <AboutPhilosophy />
+            <SeoHead
+                title="About"
+                description="Learn the story behind Pebbles — premium ice cream, shakes, faluda, and kulfi crafted for every craving."
+                path="/about"
+            />
+            <AboutHero imageUrl={heroImage.url} imageAlt={heroImage.alt} content={about.hero} />
+            <AboutStory imageUrl={storyImage.url} imageAlt={storyImage.alt} content={about.story} />
+            <AboutPhilosophy content={about.philosophy} />
             <AboutSpecialties specialties={specialties} />
             <AboutAmbience
                 imageUrl={ambienceImage.url}
                 imageAlt={ambienceImage.alt}
                 secondaryImageUrl={ambienceSecondary.url}
                 secondaryImageAlt={ambienceSecondary.alt}
+                content={about.ambience}
             />
-            <AboutTeam />
-            <AboutValues />
-            <AboutBrandStatement />
+            <AboutTeam content={about.team} />
+            <AboutValues content={about.values} />
+            <AboutBrandStatement content={about.brand_statement} />
             <AboutCta />
         </div>
     );

@@ -29,6 +29,9 @@ class Order extends Model
         'change_window_minutes',
         'subtotal',
         'discount_amount',
+        'coupon_id',
+        'coupon_code',
+        'coupon_discount_amount',
         'delivery_fee',
         'tax_amount',
         'grand_total',
@@ -51,6 +54,7 @@ class Order extends Model
     protected $attributes = [
         'status' => 'pending',
         'discount_amount' => 0,
+        'coupon_discount_amount' => 0,
         'delivery_fee' => 0,
         'tax_amount' => 0,
     ];
@@ -65,6 +69,7 @@ class Order extends Model
             'change_window_minutes' => 'integer',
             'subtotal' => 'decimal:2',
             'discount_amount' => 'decimal:2',
+            'coupon_discount_amount' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
             'tax_amount' => 'decimal:2',
             'grand_total' => 'decimal:2',
@@ -94,6 +99,16 @@ class Order extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class);
+    }
+
+    public function couponRedemption(): HasOne
+    {
+        return $this->hasOne(CouponRedemption::class);
     }
 
     public function deliveryZone(): BelongsTo
