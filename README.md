@@ -427,16 +427,16 @@ Migration `2026_08_21_000030_add_analytics_indexes_to_orders_table` adds indexes
 ## 📸 Project Screenshots
 
 ### Homepage
-![Pebbles Homepage](screenshots/homepage.png)
+![Pebbles Homepage](resources/screenshots/homepage.png)
 
 ### Menu & Products
-![Menu and Products](screenshots/menu-products.png)
+![Menu and Products](resources/screenshots/menu-products.png)
 
 ### Cart & Checkout
-![Cart and Checkout](screenshots/cart-checkout.png)
+![Cart and Checkout](resources/screenshots/cart-checkout.png)
 
 ### Admin Dashboard & Orders
-![Admin Dashboard and Orders](screenshots/customer-orders.png)
+![Admin Dashboard and Orders](resources/screenshots/customer-orders.png)
 
 ### Admin Management
-![Admin Management](screenshots/admin-management.png)
+![Admin Management](resources/screenshots/admin-management.png)
