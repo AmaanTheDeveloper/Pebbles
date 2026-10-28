@@ -155,30 +155,74 @@ class OrderReceiptData
 
     private static function logoDataUri(): ?string
     {
-        $path = BrandingSettings::logoPath();
+        $path = BrandingSettings::logoPath() ?: BrandingSettings::faviconPath();
 
         if ($path === null || $path === '') {
             return null;
         }
 
         if (! Storage::disk('public')->exists($path)) {
+            $fallbackPath = BrandingSettings::faviconPath();
+            if ($fallbackPath !== null && $fallbackPath !== '' && Storage::disk('public')->exists($fallbackPath)) {
+                $path = $fallbackPath;
+            } else {
+                return null;
+            }
+        }
+
+        try {
+            $mime = Storage::disk('public')->mimeType($path) ?: 'image/png';
+            $contents = Storage::disk('public')->get($path);
+        } catch (\Throwable) {
             return null;
         }
 
-        $absolute = Storage::disk('public')->path($path);
-
-        if (! is_file($absolute)) {
+        if ($contents === false || $contents === '' || $contents === null) {
             return null;
         }
 
-        $mime = mime_content_type($absolute) ?: 'image/png';
-        $contents = file_get_contents($absolute);
-
-        if ($contents === false || $contents === '') {
-            return null;
+        if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/svg+xml'], true)) {
+            return 'data:'.$mime.';base64,'.base64_encode($contents);
         }
 
-        return 'data:'.$mime.';base64,'.base64_encode($contents);
+        if (extension_loaded('gd')) {
+            try {
+                $img = @imagecreatefromstring($contents);
+                if ($img !== false) {
+                    $width = imagesx($img);
+                    $height = imagesy($img);
+                    $target = imagecreatetruecolor($width, $height);
+                    $white = imagecolorallocate($target, 255, 255, 255);
+                    imagefill($target, 0, 0, $white);
+                    imagecopy($target, $img, 0, 0, 0, 0, $width, $height);
+
+                    ob_start();
+                    imagejpeg($target, null, 95);
+                    $jpegBytes = ob_get_clean();
+
+                    if ($jpegBytes !== false && $jpegBytes !== '') {
+                        return 'data:image/jpeg;base64,'.base64_encode($jpegBytes);
+                    }
+                }
+            } catch (\Throwable) {
+                // Fall back to direct PNG encoding below
+            }
+
+            return 'data:'.$mime.';base64,'.base64_encode($contents);
+        }
+
+        if (extension_loaded('imagick')) {
+            return 'data:'.$mime.';base64,'.base64_encode($contents);
+        }
+
+        if (Storage::disk('public')->exists('branding/logo_pdf.jpg')) {
+            $jpegContents = Storage::disk('public')->get('branding/logo_pdf.jpg');
+            if ($jpegContents) {
+                return 'data:image/jpeg;base64,'.base64_encode($jpegContents);
+            }
+        }
+
+        return null;
     }
 
     private static function orderTypeLabel(?OrderType $type): string
@@ -217,7 +261,7 @@ class OrderReceiptData
         return match ($status) {
             PaymentStatus::Pending => 'Pending',
             PaymentStatus::Submitted => 'Pending Verification',
-            PaymentStatus::Verified => 'Approved',
+            PaymentStatus::Verified => 'Paid',
             PaymentStatus::Rejected => 'Rejected',
             PaymentStatus::Failed => 'Failed',
             PaymentStatus::Refunded => 'Refunded',

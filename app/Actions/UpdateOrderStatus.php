@@ -3,6 +3,8 @@
 namespace App\Actions;
 
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Events\OrderConfirmed;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
@@ -47,6 +49,19 @@ class UpdateOrderStatus
             }
 
             $order->update($updates);
+
+            if ($to === OrderStatus::Completed) {
+                $payment = $order->payment;
+                if ($payment !== null && $payment->method === PaymentMethod::Cod && in_array($payment->status, [PaymentStatus::Pending, PaymentStatus::Submitted], true)) {
+                    $payment->update([
+                        'status' => PaymentStatus::Verified,
+                        'paid_at' => now(),
+                        'verified_at' => now(),
+                        'verified_by' => $actor->id,
+                        'rejection_reason' => null,
+                    ]);
+                }
+            }
 
             OrderStatusHistory::query()->create([
                 'order_id' => $order->id,

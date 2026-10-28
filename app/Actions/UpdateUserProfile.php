@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Models\Address;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class UpdateUserProfile
 {
@@ -34,7 +35,7 @@ class UpdateUserProfile
             }
 
             if (array_key_exists('address', $validated) && is_array($validated['address'])) {
-                $this->syncDefaultAddress($user, $validated['address']);
+                $this->syncDefaultAddress($user->fresh(), $validated['address']);
             }
 
             return $user->fresh(['branch', 'defaultAddress']);
@@ -71,22 +72,53 @@ class UpdateUserProfile
             return;
         }
 
-        $hasMeaningfulData = collect($payload)
-            ->only(['line1', 'area', 'city', 'recipient_name', 'phone'])
-            ->filter(fn (?string $value): bool => filled($value))
-            ->isNotEmpty();
+        $hasStreetAddress = filled($payload['line1'] ?? null);
 
-        if (! $hasMeaningfulData) {
-            Address::query()
-                ->where('user_id', $user->id)
-                ->where('is_default', true)
-                ->delete();
+        if (! $hasStreetAddress) {
+            $hasAnyAddressField = collect($payload)
+                ->only(['line1', 'line2', 'area', 'city', 'recipient_name', 'phone', 'instructions'])
+                ->contains(fn ($value): bool => filled($value));
+
+            // Explicit clear (all empty) removes the saved default address.
+            // Incomplete payloads without line1 (e.g. city-only UI defaults) are ignored.
+            if (! $hasAnyAddressField) {
+                Address::query()
+                    ->where('user_id', $user->id)
+                    ->where('is_default', true)
+                    ->delete();
+            }
 
             return;
         }
 
-        $payload['recipient_name'] ??= $user->name;
-        $payload['phone'] ??= $user->phone;
+        $payload['recipient_name'] = filled($payload['recipient_name'] ?? null)
+            ? $payload['recipient_name']
+            : $user->name;
+
+        $resolvedPhone = filled($payload['phone'] ?? null)
+            ? $payload['phone']
+            : $user->phone;
+
+        if (! filled($resolvedPhone)) {
+            throw ValidationException::withMessages([
+                'address.phone' => 'A phone number is required to save a delivery address.',
+                'phone' => 'A phone number is required to save a delivery address.',
+            ]);
+        }
+
+        if (! filled($payload['area'] ?? null)) {
+            throw ValidationException::withMessages([
+                'address.area' => 'Area / locality is required to save a delivery address.',
+            ]);
+        }
+
+        if (! filled($payload['city'] ?? null)) {
+            throw ValidationException::withMessages([
+                'address.city' => 'City is required to save a delivery address.',
+            ]);
+        }
+
+        $payload['phone'] = $resolvedPhone;
         $payload['is_default'] = true;
 
         Address::query()->updateOrCreate(

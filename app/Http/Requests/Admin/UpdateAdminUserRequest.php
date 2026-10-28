@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -14,6 +15,24 @@ class UpdateAdminUserRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user()?->isSuperAdmin() ?? false;
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge([
+                'email' => Str::lower(trim((string) $this->input('email'))),
+            ]);
+        }
+
+        if ($this->has('name')) {
+            $this->merge([
+                'name' => trim((string) $this->input('name')),
+            ]);
+        }
     }
 
     /**

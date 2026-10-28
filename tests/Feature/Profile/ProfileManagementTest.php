@@ -55,7 +55,135 @@ test('authenticated user can update profile name phone and default address', fun
     expect($user->name)->toBe('Muhammad Ali Khan')
         ->and($user->phone)->toBe('03001234567')
         ->and($user->defaultAddress)->not->toBeNull()
-        ->and($user->defaultAddress->line1)->toBe('DHA Phase 7');
+        ->and($user->defaultAddress->line1)->toBe('DHA Phase 7')
+        ->and($user->defaultAddress->phone)->toBe('03001234567');
+});
+
+test('name-only profile update succeeds without creating an address', function () {
+    $user = User::factory()->create([
+        'name' => 'GH TESTER',
+        'phone' => null,
+    ]);
+
+    expect(Address::query()->where('user_id', $user->id)->count())->toBe(0);
+
+    $this->actingAs($user)->patchJson('/api/v1/profile', [
+        'name' => 'GH TESTER Updated',
+        'email' => $user->email,
+        'phone' => null,
+        'address' => [
+            'recipient_name' => 'GH TESTER Updated',
+            'phone' => null,
+            'line1' => null,
+            'line2' => null,
+            'area' => null,
+            'city' => 'Karachi',
+        ],
+    ])
+        ->assertSuccessful()
+        ->assertJsonPath('data.name', 'GH TESTER Updated')
+        ->assertJsonPath('data.default_address', null);
+
+    expect(Address::query()->where('user_id', $user->id)->count())->toBe(0);
+});
+
+test('profile update without address payload does not create an address', function () {
+    $user = User::factory()->create(['name' => 'Only Name']);
+
+    $this->actingAs($user)->patchJson('/api/v1/profile', [
+        'name' => 'Only Name Updated',
+    ])
+        ->assertSuccessful()
+        ->assertJsonPath('data.name', 'Only Name Updated');
+
+    expect(Address::query()->where('user_id', $user->id)->count())->toBe(0);
+});
+
+test('saving address without phone returns validation error instead of sql exception', function () {
+    $user = User::factory()->create([
+        'phone' => null,
+    ]);
+
+    $this->actingAs($user)->patchJson('/api/v1/profile', [
+        'name' => $user->name,
+        'phone' => null,
+        'address' => [
+            'line1' => 'Street 12',
+            'area' => 'DHA Phase 6',
+            'city' => 'Karachi',
+            'phone' => null,
+        ],
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['address.phone']);
+
+    expect(Address::query()->where('user_id', $user->id)->count())->toBe(0);
+});
+
+test('existing default address is updated without creating duplicates', function () {
+    $user = User::factory()->create([
+        'name' => 'Sara Khan',
+        'phone' => '03001112233',
+    ]);
+
+    $address = Address::factory()->create([
+        'user_id' => $user->id,
+        'is_default' => true,
+        'recipient_name' => 'Sara Khan',
+        'phone' => '03001112233',
+        'line1' => 'Old Street',
+        'area' => 'Gulberg',
+        'city' => 'Karachi',
+    ]);
+
+    $this->actingAs($user)->patchJson('/api/v1/profile', [
+        'name' => 'Sara Khan',
+        'phone' => '03001112233',
+        'address' => [
+            'line1' => 'New Street 9',
+            'area' => 'Clifton',
+            'city' => 'Karachi',
+            'phone' => '03001112233',
+        ],
+    ])
+        ->assertSuccessful()
+        ->assertJsonPath('data.default_address.line1', 'New Street 9')
+        ->assertJsonPath('data.default_address.area', 'Clifton');
+
+    expect(Address::query()->where('user_id', $user->id)->count())->toBe(1)
+        ->and($address->fresh()->line1)->toBe('New Street 9');
+});
+
+test('clearing address fields removes the default address', function () {
+    $user = User::factory()->create([
+        'phone' => '03009998877',
+    ]);
+
+    Address::factory()->create([
+        'user_id' => $user->id,
+        'is_default' => true,
+        'phone' => '03009998877',
+        'line1' => 'Street 1',
+        'area' => 'DHA',
+        'city' => 'Karachi',
+    ]);
+
+    $this->actingAs($user)->patchJson('/api/v1/profile', [
+        'name' => $user->name,
+        'phone' => '03009998877',
+        'address' => [
+            'recipient_name' => null,
+            'phone' => null,
+            'line1' => null,
+            'line2' => null,
+            'area' => null,
+            'city' => null,
+        ],
+    ])
+        ->assertSuccessful()
+        ->assertJsonPath('data.default_address', null);
+
+    expect(Address::query()->where('user_id', $user->id)->count())->toBe(0);
 });
 
 test('email change clears verification and enforces uniqueness', function () {

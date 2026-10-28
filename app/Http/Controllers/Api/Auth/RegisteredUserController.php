@@ -23,8 +23,8 @@ class RegisteredUserController extends Controller
         $guestToken = GuestCartCookie::read($request);
 
         $user = User::query()->create([
-            'name' => $request->string('name')->toString(),
-            'email' => $request->string('email')->toString(),
+            'name' => $request->string('name')->trim()->toString(),
+            'email' => $request->string('email')->trim()->lower()->toString(),
             'password' => $request->string('password')->toString(),
         ]);
 

@@ -40,18 +40,30 @@ export async function fetchOrderStatusHistory(orderNumber) {
 }
 
 export async function downloadOrderReceipt(orderNumber) {
-    const response = await api.get(`/api/v1/orders/${orderNumber}/receipt`, {
-        responseType: 'blob',
-    });
+    try {
+        const response = await api.get(`/api/v1/orders/${orderNumber}/receipt`, {
+            responseType: 'blob',
+        });
 
-    const contentDisposition = response.headers?.['content-disposition'] ?? '';
-    const matched = /filename="?([^"]+)"?/i.exec(contentDisposition);
-    const filename = matched?.[1] || `Pebbles-Order-${orderNumber}.pdf`;
+        const contentDisposition = response.headers?.['content-disposition'] ?? '';
+        const matched = /filename="?([^"]+)"?/i.exec(contentDisposition);
+        const filename = matched?.[1] || `Pebbles-Order-${orderNumber}.pdf`;
 
-    return {
-        blob: response.data,
-        filename,
-    };
+        return {
+            blob: response.data,
+            filename,
+        };
+    } catch (err) {
+        if (err.response?.data instanceof Blob) {
+            try {
+                const text = await err.response.data.text();
+                err.response.data = JSON.parse(text);
+            } catch {
+                // Keep original error if text is not JSON
+            }
+        }
+        throw err;
+    }
 }
 
 export async function selectOrderPayment(orderNumber, payload) {

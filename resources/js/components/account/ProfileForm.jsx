@@ -75,7 +75,7 @@ export default function ProfileForm({ showAddress = true, showDeleteAccount = tr
         setAddressLine1(user.default_address?.line1 ?? '');
         setAddressLine2(user.default_address?.line2 ?? '');
         setAddressArea(user.default_address?.area ?? '');
-        setAddressCity(user.default_address?.city ?? 'Karachi');
+        setAddressCity(user.default_address?.city ?? '');
     }, [user]);
 
     useEffect(() => {
@@ -108,18 +108,44 @@ export default function ProfileForm({ showAddress = true, showDeleteAccount = tr
             const payload = {
                 name,
                 email,
-                phone: phone || null,
+                phone: phone.trim() || null,
             };
 
             if (showAddress) {
-                payload.address = {
-                    recipient_name: name,
-                    phone: phone || null,
-                    line1: addressLine1 || null,
-                    line2: addressLine2 || null,
-                    area: addressArea || null,
-                    city: addressCity || null,
-                };
+                const trimmedLine1 = addressLine1.trim();
+                const trimmedLine2 = addressLine2.trim();
+                const trimmedArea = addressArea.trim();
+                const trimmedCity = addressCity.trim();
+                const hadSavedAddress = Boolean(user.default_address);
+                const hasAddressInput = Boolean(
+                    trimmedLine1 || trimmedLine2 || trimmedArea || trimmedCity,
+                );
+
+                // Do not send a default/empty city-only address on profile-only updates.
+                if (hasAddressInput || hadSavedAddress) {
+                    if (trimmedLine1 && ! phone.trim()) {
+                        setProfileErrors({
+                            phone: ['A phone number is required to save a delivery address.'],
+                            'address.phone': ['A phone number is required to save a delivery address.'],
+                        });
+                        setFlash({
+                            type: 'error',
+                            message: 'A phone number is required to save a delivery address.',
+                        });
+                        setSavingProfile(false);
+
+                        return;
+                    }
+
+                    payload.address = {
+                        recipient_name: name.trim() || null,
+                        phone: phone.trim() || null,
+                        line1: trimmedLine1 || null,
+                        line2: trimmedLine2 || null,
+                        area: trimmedArea || null,
+                        city: trimmedCity || null,
+                    };
+                }
             }
 
             const response = await updateProfile(payload);
@@ -346,6 +372,11 @@ export default function ProfileForm({ showAddress = true, showDeleteAccount = tr
                                     onChange={(event) => setAddressArea(event.target.value)}
                                     className="w-full rounded-lg border border-stone-300 px-3 py-2"
                                 />
+                                {firstFieldError(profileErrors, 'address.area') ? (
+                                    <span className="text-xs text-red-600">
+                                        {firstFieldError(profileErrors, 'address.area')}
+                                    </span>
+                                ) : null}
                             </label>
                             <label className="block space-y-1 text-sm">
                                 <span className="font-medium text-stone-700">City</span>
@@ -353,9 +384,18 @@ export default function ProfileForm({ showAddress = true, showDeleteAccount = tr
                                     value={addressCity}
                                     onChange={(event) => setAddressCity(event.target.value)}
                                     className="w-full rounded-lg border border-stone-300 px-3 py-2"
+                                    placeholder="Karachi"
                                 />
+                                {firstFieldError(profileErrors, 'address.city') ? (
+                                    <span className="text-xs text-red-600">
+                                        {firstFieldError(profileErrors, 'address.city')}
+                                    </span>
+                                ) : null}
                             </label>
                         </div>
+                        {firstFieldError(profileErrors, 'address.phone') ? (
+                            <p className="text-xs text-red-600">{firstFieldError(profileErrors, 'address.phone')}</p>
+                        ) : null}
                     </div>
                 ) : null}
 

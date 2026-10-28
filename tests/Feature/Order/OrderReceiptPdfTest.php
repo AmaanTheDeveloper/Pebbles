@@ -153,7 +153,7 @@ test('receipt uses historical stored order values and logo fallback safely', fun
         ->and($payload['has_logo'])->toBeFalse();
 });
 
-test('receipt includes logo when branding logo exists on disk', function () {
+test('receipt includes logo when branding logo exists on disk and gd is available', function () {
     Storage::fake('public');
 
     BrandingSettings::storeLogo(UploadedFile::fake()->image('pebbles-logo.png', 200, 80));
@@ -164,8 +164,13 @@ test('receipt includes logo when branding logo exists on disk', function () {
 
     $payload = OrderReceiptData::for($order);
 
-    expect($payload['has_logo'])->toBeTrue()
-        ->and($payload['logo_src'])->toStartWith('data:image/');
+    if (extension_loaded('gd') || extension_loaded('imagick')) {
+        expect($payload['has_logo'])->toBeTrue()
+            ->and($payload['logo_src'])->toStartWith('data:image/');
+    } else {
+        expect($payload['has_logo'])->toBeFalse()
+            ->and($payload['logo_src'])->toBeNull();
+    }
 });
 
 test('takeaway receipt omits delivery fee section', function () {

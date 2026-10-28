@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Support\AdminBranchScope;
+use App\Support\ContactSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -17,8 +18,9 @@ class DashboardController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
-        $todayStart = Carbon::today();
-        $todayEnd = Carbon::tomorrow();
+        $timezone = ContactSettings::timezone();
+        $todayStart = Carbon::now($timezone)->startOfDay()->setTimezone('UTC');
+        $todayEnd = $todayStart->copy()->addDay();
         $user = $request->user()->loadMissing('branch');
         $branchId = AdminBranchScope::resolveBranchId($user, $request->integer('branch_id') ?: null);
 
@@ -26,11 +28,13 @@ class DashboardController extends Controller
         AdminBranchScope::constrain($ordersQuery, $user, $branchId);
 
         $ordersToday = (clone $ordersQuery)
-            ->whereBetween('created_at', [$todayStart, $todayEnd])
+            ->where('created_at', '>=', $todayStart)
+            ->where('created_at', '<', $todayEnd)
             ->count();
 
         $salesToday = (string) (clone $ordersQuery)
-            ->whereBetween('created_at', [$todayStart, $todayEnd])
+            ->where('created_at', '>=', $todayStart)
+            ->where('created_at', '<', $todayEnd)
             ->where('status', '!=', OrderStatus::Cancelled->value)
             ->sum('grand_total');
 

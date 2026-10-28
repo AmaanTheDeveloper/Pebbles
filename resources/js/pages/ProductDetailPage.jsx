@@ -127,6 +127,10 @@ export default function ProductDetailPage() {
     };
 
     const handleAddToCart = async () => {
+        if (mutating) {
+            return;
+        }
+
         setActionError(null);
         setActionSuccess(null);
 
@@ -135,8 +139,6 @@ export default function ProductDetailPage() {
             setActionError(validationMessage);
             return;
         }
-
-        const wasEmptyCart = itemCount === 0;
 
         try {
             await addItem({
@@ -147,12 +149,10 @@ export default function ProductDetailPage() {
             });
             setActionSuccess('Added to cart.');
 
-            if (wasEmptyCart) {
-                void flyProductToCart({
-                    sourceElement: addButtonRef.current,
-                    imageUrl: displayImage?.url ?? null,
-                });
-            }
+            void flyProductToCart({
+                sourceElement: addButtonRef.current,
+                imageUrl: displayImage?.url ?? null,
+            });
         } catch (err) {
             setActionError(err.message || 'Unable to add this item to your cart.');
         }

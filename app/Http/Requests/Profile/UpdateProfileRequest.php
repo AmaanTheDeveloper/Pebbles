@@ -3,13 +3,33 @@
 namespace App\Http\Requests\Profile;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateProfileRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return $this->user() !== null;
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge([
+                'email' => Str::lower(trim((string) $this->input('email'))),
+            ]);
+        }
+
+        if ($this->has('name')) {
+            $this->merge([
+                'name' => trim((string) $this->input('name')),
+            ]);
+        }
     }
 
     /**
@@ -39,5 +59,41 @@ class UpdateProfileRequest extends FormRequest
             'address.city' => ['sometimes', 'nullable', 'string', 'max:255'],
             'address.instructions' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $address = $this->input('address');
+
+            if (! is_array($address) || ! filled($address['line1'] ?? null)) {
+                return;
+            }
+
+            $phone = filled($address['phone'] ?? null)
+                ? $address['phone']
+                : (filled($this->input('phone')) ? $this->input('phone') : $this->user()?->phone);
+
+            if (! filled($phone)) {
+                $validator->errors()->add(
+                    'address.phone',
+                    'A phone number is required to save a delivery address.',
+                );
+            }
+
+            if (! filled($address['area'] ?? null)) {
+                $validator->errors()->add(
+                    'address.area',
+                    'Area / locality is required to save a delivery address.',
+                );
+            }
+
+            if (! filled($address['city'] ?? null)) {
+                $validator->errors()->add(
+                    'address.city',
+                    'City is required to save a delivery address.',
+                );
+            }
+        });
     }
 }

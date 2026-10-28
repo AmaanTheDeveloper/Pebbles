@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { playCartAddSound } from '../../lib/cartAddAnimation';
 
@@ -22,7 +21,6 @@ function CartIcon() {
 }
 
 export default function NavbarCartLink() {
-    const { isAuthenticated } = useAuth();
     const { itemCount, loading } = useCart();
     const previousCountRef = useRef(itemCount);
     const countElementRef = useRef(null);
@@ -34,7 +32,7 @@ export default function NavbarCartLink() {
     const [displayCount, setDisplayCount] = useState(0);
 
     useEffect(() => {
-        if (!isAuthenticated || loading) {
+        if (loading) {
             return;
         }
 
@@ -108,9 +106,9 @@ export default function NavbarCartLink() {
         previousCountRef.current = itemCount;
 
         return undefined;
-    }, [isAuthenticated, itemCount, loading]);
+    }, [itemCount, loading]);
 
-    if (!isAuthenticated || !visible) {
+    if (!visible) {
         return null;
     }
 
