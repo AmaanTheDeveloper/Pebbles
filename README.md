@@ -348,6 +348,7 @@ out_for_delivery → completed | cancelled
 
 Invalid jumps (e.g. `pending → completed`) return **422**.
 
+
 ### Historical integrity
 
 Catalog price/fee edits and renames **do not** rewrite order item snapshots or stored delivery fees on existing orders.
